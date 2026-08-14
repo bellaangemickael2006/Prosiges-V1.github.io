@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block titre %}Clients{% endblock %}
+{% block contenu %}
+<h1>{{ 'Mes clients' if current_user.est_client else "Carnet d'adresses clients" }}</h1>
+<p class="sous-titre">{{ clients|length }} client(s) enregistré(s)</p>
+
+<div class="panneau" style="max-width:620px;">
+  <h3 style="margin-top:0;">Ajouter un client</h3>
+  <form method="post">
+    <div class="grille2">
+      <div class="champ"><label>Nom *</label><input type="text" name="nom" required></div>
+      <div class="champ"><label>Contact (téléphone)</label><input type="text" name="contact" placeholder="Ex : 07 00 00 00 00"></div>
+    </div>
+    <div class="champ"><label>Localisation</label><input type="text" name="localisation" placeholder="Ex : Cocody, Abidjan"></div>
+    {% if not current_user.est_client and entreprises %}
+    <div class="champ">
+      <label>Rattacher à</label>
+      <select name="entreprise_id">
+        <option value="">Carnet interne {{ NOM_CABINET }}</option>
+        {% for e in entreprises %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <button class="btn" type="submit">Ajouter</button>
+  </form>
+</div>
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Nom</th><th>Contact</th><th>Localisation</th>
+    {% if not current_user.est_client %}<th>Rattaché à</th>{% endif %}
+    <th class="num">Opérations</th><th>Ajouté le</th><th>Fiche</th></tr></thead>
+  <tbody>
+  {% for c in clients %}
+    <tr>
+      <td><a href="{{ url_for('fiche_client', client_id=c.id) }}"><strong>{{ c.nom }}</strong></a></td>
+      <td>{{ c.contact or '—' }}</td>
+      <td>{{ c.localisation or '—' }}</td>
+      {% if not current_user.est_client %}<td>{{ c.entreprise.nom if c.entreprise else NOM_CABINET }}</td>{% endif %}
+      <td class="num">{{ c.operations|length }}</td>
+      <td>{{ c.date_creation.strftime('%d/%m/%Y') }}</td>
+      <td><a class="btn petit clair" href="{{ url_for('fiche_client', client_id=c.id) }}">Ouvrir</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="vide">Aucun client enregistré. Les clients sont aussi créés automatiquement lors de la saisie d'une vente.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

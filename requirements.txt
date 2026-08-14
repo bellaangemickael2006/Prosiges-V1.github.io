@@ -1,0 +1,27 @@
+# =====================================================================
+#  AK World — dépendances pour l'usage local (base SQLite)
+#
+#  Uniquement des bibliothèques disponibles en version précompilée sur
+#  Windows, macOS et Linux : aucune compilation, aucun outil externe
+#  requis. L'installation ne peut pas échouer pour cause de composant
+#  manquant sur la machine.
+#
+#  Les bornes hautes (<4.0, <6.0...) protègent le projet dans la durée :
+#  les correctifs et améliorations sont acceptés, mais pas un changement
+#  de version majeure qui pourrait casser le code sans prévenir.
+# =====================================================================
+
+# --- Cœur de l'application ---
+Flask>=3.0.3,<4.0
+Flask-SQLAlchemy>=3.1.1,<4.0
+Flask-Login>=0.6.3,<1.0
+Werkzeug>=3.0.3,<4.0
+SQLAlchemy>=2.0.30,<3.0
+python-dotenv>=1.0.1,<2.0
+
+# --- Exports Excel et PDF ---
+openpyxl>=3.1.5,<4.0
+reportlab>=4.2.5,<6.0
+
+# --- Graphiques des rapports PDF (annexe « Analyse graphique ») ---
+matplotlib>=3.8,<4.0

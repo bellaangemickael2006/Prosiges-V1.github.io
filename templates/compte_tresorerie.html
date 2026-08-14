@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% import '_tableau_compte.html' as compte_macro %}
+{% block titre %}Compte de trésorerie — {{ entreprise.nom }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ titre }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ entreprise.nom }} — exercice {{ annee }} · {{ sous_titre }}
+    </p>
+  </div>
+  <div class="actions">
+    <form method="get">
+      <input type="hidden" name="entreprise_id" value="{{ entreprise.id }}">
+      <select name="annee" onchange="this.form.submit()"
+              style="padding:8px 11px;border:1px solid var(--bord-fort);border-radius:7px;font-family:inherit;">
+        {% for a in range(annee_courante + 1, annee_courante - 5, -1) %}
+          <option value="{{ a }}" {{ 'selected' if a == annee }}>Exercice {{ a }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% if current_user.peut_budgeter %}
+      <a class="btn clair" href="{{ url_for('budget', type_budget=type_budget, entreprise_id=entreprise.id, annee=annee) }}">
+        Saisir le budget
+      </a>
+    {% endif %}
+    <a class="btn clair" href="{{ url_for('export_excel', entreprise_id=entreprise.id, annee=annee) }}">Exporter Excel</a>
+    <form method="post" action="{{ url_for('export_sheets', entreprise_id=entreprise.id, annee=annee) }}">
+      <button class="btn vert" type="submit">Publier vers Google Sheets</button>
+    </form>
+  </div>
+</div>
+
+{% if not compte.budget or not compte.budget.est_renseigne() %}
+<div class="encart">
+  <strong>Aucun budget de trésorerie saisi pour {{ annee }}</strong>
+  La colonne « Prévu » reste à zéro. {% if current_user.peut_budgeter %}
+  Renseignez-le pour comparer les encaissements attendus et ceux réellement
+  constatés.{% endif %}
+</div>
+{% endif %}
+
+<div class="legende-compte">
+  <span><b>Prévu</b> — le budget de trésorerie saisi par le gérant</span>
+  <span><b>Réalisé</b> — l'argent réellement encaissé et décaissé</span>
+  <span><b>Écart</b> — Réalisé − Prévu</span>
+</div>
+
+{{ compte_macro.tableau(compte) }}
+
+<h3>Comment lire ce tableau</h3>
+<div class="panneau">
+  <p style="font-size:14px;line-height:1.65;margin-bottom:10px;">
+    Le compte de trésorerie mesure la <b>liquidité réelle</b> de
+    l'entreprise : l'argent est-il effectivement en caisse ?
+  </p>
+  <ul style="font-size:13.5px;line-height:1.75;padding-left:20px;color:var(--doux);">
+    <li><b>Ventes au comptant</b> : les ventes réellement encaissées. Une
+      vente à crédit n'y figure pas — elle apparaîtra en « Encaissement des
+      créances clients » le jour où le client paiera.</li>
+    <li><b>Total encaissement (A)</b> : tout ce qui est entré en caisse,
+      ventes comprises, mais aussi emprunts, apports et subventions.</li>
+    <li><b>Total décaissement (B)</b> : tout ce qui en est sorti.</li>
+    <li><b>Solde de fin de période (D) = C + A − B</b>, reporté d'un mois sur
+      l'autre : le solde de fin de janvier devient le solde de début de
+      février.</li>
+  </ul>
+  <p style="font-size:13px;color:var(--doux);margin-top:12px;">
+    Une entreprise peut être rentable sans avoir d'argent — c'est le cas
+    quand elle vend beaucoup à crédit. Elle peut aussi avoir beaucoup de
+    liquidités sans être rentable, quand elle travaille avec l'argent de ses
+    fournisseurs. Comparez ce tableau au
+    <a href="{{ url_for('compte_exploitation', entreprise_id=entreprise.id, annee=annee) }}">compte d'exploitation</a>
+    pour distinguer les deux situations.
+  </p>
+</div>
+
+{% endblock %}

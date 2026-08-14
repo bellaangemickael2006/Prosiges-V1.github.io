@@ -1,0 +1,310 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║              AK WORLD — COMMENT LANCER LE SITE                       ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  MÉTHODE 1 — SUR VOTRE ORDINATEUR  (le plus rapide : 1 double-clic)  │
+└──────────────────────────────────────────────────────────────────────┘
+
+  ÉTAPE UNIQUE :
+
+      Windows  →  double-cliquez sur   LANCER_WINDOWS.bat
+      Mac      →  double-cliquez sur   LANCER_MAC_LINUX.sh
+      Linux    →  double-cliquez sur   LANCER_MAC_LINUX.sh
+
+
+  C'est tout. Le script fait TOUT seul :
+
+      · vérifie que Python est présent
+      · crée l'environnement de travail
+      · installe les composants nécessaires
+      · génère une clé de sécurité unique
+      · crée la base de données
+      · charge des données de démonstration
+      · démarre le site
+      · OUVRE VOTRE NAVIGATEUR sur le site
+
+
+  Le premier lancement prend 1 à 2 minutes (installation).
+  Les suivants : moins de 2 secondes.
+
+
+  SI PYTHON N'EST PAS INSTALLÉ
+  ─────────────────────────────
+  Le script vous le dira. Téléchargez-le sur :
+
+      https://www.python.org/downloads/
+
+  ⚠  Sur Windows, COCHEZ LA CASE « Add Python to PATH »
+     pendant l'installation. C'est le seul piège.
+
+  Puis relancez le fichier.
+
+
+  SI LE MAC REFUSE D'OUVRIR LE FICHIER
+  ─────────────────────────────────────
+  Clic droit sur LANCER_MAC_LINUX.sh → « Ouvrir » → « Ouvrir » à nouveau.
+  (macOS demande une confirmation la première fois.)
+
+
+  POUR ARRÊTER LE SITE
+  ────────────────────
+  Fermez la fenêtre noire, ou appuyez sur Ctrl + C dedans.
+
+
+  IDENTIFIANTS DE DÉMONSTRATION
+  ─────────────────────────────
+      Gérant       gerant@akworld.com       AkWorld2026!
+      Consultant   consultant@akworld.com   Consultant2026!
+      Responsable  commercial@akworld.com   Commercial2026!
+      Comptable    comptable@akworld.com    Comptable2026!
+      Client TPE   bella@jusdebella.ci      Bella2026!
+      Client TPE   michel@quincaillerie.ci  Michel2026!
+
+  ➜ Pour la démonstration à votre maître de stage, montrez d'abord
+    le compte GÉRANT, puis déconnectez-vous et montrez le compte
+    CLIENT TPE (bella@jusdebella.ci). Le contraste entre les deux
+    interfaces est le cœur du projet.
+
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  POSIGES V1 — LES MODULES DE GESTION                                 │
+└──────────────────────────────────────────────────────────────────────┘
+
+  L'application s'appelle désormais POSIGES V1
+  (Programme Simplifié de Gestion pour les Entreprises).
+
+  LE PRINCIPE : UNE SEULE SAISIE
+  ───────────────────────────────
+  Le client émet un reçu. Automatiquement, et sans rien ressaisir :
+
+      · son chiffre d'affaires augmente
+      · son stock diminue
+      · l'écriture part au journal
+      · sa trésorerie se met à jour
+      · sa fiche client s'enrichit
+
+  LES ONGLETS
+  ────────────
+   Produits & services  catalogue ; un service n'a pas de stock
+   Ventes               factures proforma et reçus, comptant ou à crédit
+   Stock                entrées, sorties, seuils d'alerte
+   Clients              fiche complète : payé, dû, toutes ses factures
+   Fournisseurs         mêmes fonctions, côté achats
+   Rapports             rédigés par le cabinet, publiés au client
+
+  PREMIÈRE UTILISATION, DANS L'ORDRE
+  ───────────────────────────────────
+    1. « Mon profil » → Informations de facturation
+       Renseignez vos coordonnées UNE SEULE FOIS : elles apparaîtront
+       sur toutes vos factures.
+
+    2. « Produits & services » → ajoutez ce que vous vendez
+
+    3. « Ventes » → + Reçu
+       Choisissez l'article : désignation, prix et unité se remplissent
+       tout seuls.
+
+  LE SÉLECTEUR D'ENTREPRISE
+  ──────────────────────────
+  Pour le gérant et les consultants, la barre grise en haut de page
+  permet de basculer d'une entreprise cliente à l'autre. Tous les
+  écrans suivent le choix effectué.
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  LA PUBLICATION GOOGLE SHEETS ÉCHOUE ?                               │
+└──────────────────────────────────────────────────────────────────────┘
+
+  UNE SEULE COMMANDE VOUS DIRA POURQUOI :
+
+      python diagnostic_google.py
+
+  Elle contrôle les neuf maillons de la chaîne, s'arrête au premier
+  qui casse, et indique précisément quoi faire.
+
+
+  LES TROIS CAUSES LES PLUS FRÉQUENTES
+  ─────────────────────────────────────
+
+  1. LES BIBLIOTHÈQUES GOOGLE NE SONT PAS INSTALLÉES
+     C'est de loin la plus courante. Elles ne font pas partie de
+     l'installation de base, pour que celle-ci ne puisse jamais
+     échouer. Le lanceur les installe désormais tout seul dès qu'il
+     voit un credentials.json — mais si vous avez ajouté ce fichier
+     APRÈS la première installation, lancez :
+
+         Windows   : .venv\Scripts\pip install -r requirements-google.txt
+         Mac/Linux : ./venv/bin/pip install -r requirements-google.txt
+
+  2. LE DOSSIER OU LE CLASSEUR N'EST PAS PARTAGÉ
+     Ouvrez credentials.json, repérez la ligne « client_email »
+     (du type xxx@xxx.iam.gserviceaccount.com). Dans Drive, partagez
+     le dossier ET le classeur avec cette adresse, en ÉDITEUR.
+     Lecteur ne suffit pas.
+
+  3. LE COMPTE DE SERVICE N'A PAS D'ESPACE DE STOCKAGE
+     Message : « Service Accounts do not have storage quota ».
+     C'est une limite de Google : un compte de service ne peut pas
+     CRÉER de fichier, seulement écrire dans un fichier existant.
+
+     La solution :
+       1. Dans VOTRE Drive : Nouveau → Google Sheets
+       2. Partager → l'adresse du compte de service → ÉDITEUR
+       3. Copiez l'identifiant depuis l'URL :
+          docs.google.com/spreadsheets/d/IDENTIFIANT/edit
+       4. Dans l'application : Entreprises suivies → Modifier →
+          « ID du classeur de publication » → collez-le
+
+     L'application écrira alors dans VOTRE classeur, dont vous
+     restez propriétaire.
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  UN COMPTE NE FONCTIONNE PLUS ?                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+  Mot de passe oublié, compte disparu, connexion refusée :
+
+      python gerer_comptes.py liste
+          → affiche tous les comptes et leur état
+
+      python gerer_comptes.py reparer
+          → recrée les comptes manquants et remet les mots de passe
+            d'origine. AUCUNE donnée comptable n'est touchée.
+
+      python gerer_comptes.py motdepasse <email> <nouveau_mot_de_passe>
+          → change le mot de passe d'un compte précis
+
+  (Sur Windows, remplacez « python » par « .venv\Scripts\python »
+   si la commande n'est pas reconnue.)
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  MÉTHODE 2 — EN LIGNE, AVEC UNE VRAIE ADRESSE WEB                    │
+│  (pour que votre maître de stage y accède depuis chez lui)           │
+└──────────────────────────────────────────────────────────────────────┘
+
+  Vous obtiendrez une adresse du type :
+      https://akworld.onrender.com
+
+  C'est gratuit. Comptez 15 minutes la première fois.
+
+
+  ÉTAPE 0 — CONTRÔLE DE SÉCURITÉ  (ne sautez pas cette étape)
+  ────────────────────────────────────────────────────────────
+    Lancez :
+
+        python verifier_avant_github.py
+
+    Ce script vérifie qu'aucun secret ne partira en ligne : clé
+    Google, mot de passe, base de données. Il doit afficher
+    « AUCUN PROBLÈME » avant de continuer.
+
+    ⚠  Un secret publié sur GitHub — même dans un dépôt privé,
+       même supprimé ensuite — doit être considéré comme compromis.
+       Il reste dans l'historique du dépôt.
+
+
+  ÉTAPE 1 — Mettre le code sur GitHub
+  ────────────────────────────────────
+    1. Créez un compte sur  https://github.com  (gratuit)
+    2. Cliquez sur « New repository »
+    3. Nom : akworld — laissez en « Private » si vous préférez
+    4. Dans le dossier du projet, ouvrez un terminal et tapez :
+
+           git init
+           git add .
+           git commit -m "Application AK World"
+           git branch -M main
+           git remote add origin https://github.com/VOTRE_COMPTE/akworld.git
+           git push -u origin main
+
+       Le fichier .gitignore exclut automatiquement les secrets,
+       la base de données et l'environnement Python.
+
+    5. Si vous préférez le glisser-déposer sur github.com, veillez à
+       EXCLURE MANUELLEMENT : .venv, venv, ak_world.db, .env et
+       credentials.json. La méthode Git est plus sûre.
+
+
+  ÉTAPE 2 — Déployer sur Render
+  ──────────────────────────────
+    1. Créez un compte sur  https://render.com  (gratuit)
+       → connectez-vous avec votre compte GitHub
+    2. Cliquez sur  New  →  Blueprint
+    3. Sélectionnez votre dépôt « akworld »
+    4. Cliquez sur  Apply
+
+    Render lit le fichier render.yaml et configure TOUT tout seul :
+    le serveur, la base de données PostgreSQL, la clé de sécurité,
+    les cookies sécurisés et le certificat HTTPS.
+
+    Vous n'avez AUCUNE variable à saisir.
+
+    Attendez 3 à 5 minutes. Votre adresse s'affiche en haut de page.
+
+
+  ÉTAPE 3 — Première connexion
+  ─────────────────────────────
+    Ouvrez l'adresse, connectez-vous avec :
+        gerant@akworld.com  /  AkWorld2026!
+
+    ⚠  CHANGEZ LE MOT DE PASSE IMMÉDIATEMENT
+       (onglet « Mon profil »)
+
+    Le site en ligne démarre VIDE — sans les données de démonstration.
+    C'est voulu : vous créez vos vraies entreprises clientes depuis
+    l'onglet « Entreprises suivies ».
+
+    Pour créer les comptes de votre équipe, deux possibilités :
+      · depuis l'onglet « Utilisateurs » du site
+      · ou en ligne de commande dans le shell Render :
+            python gerer_comptes.py creer "Nom Prenom" email@x.ci MotDePasse123 consultant
+
+
+  À SAVOIR SUR L'OFFRE GRATUITE RENDER
+  ─────────────────────────────────────
+    Le site s'endort après 15 minutes sans visite, et met environ
+    50 secondes à se réveiller à la visite suivante. C'est sans
+    conséquence pour une démonstration ou un usage léger.
+    L'offre payante (7 $/mois) supprime cette mise en veille.
+
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  ET APRÈS ?                                                          │
+└──────────────────────────────────────────────────────────────────────┘
+
+  SI L'INSTALLATION ÉCHOUE
+  ─────────────────────────
+  Le lanceur affiche désormais le message d'erreur complet.
+  Copiez-le-moi tel quel : je corrige la dépendance en cause.
+
+  Note : le fichier requirements-production.txt ne doit JAMAIS être
+  installé sur votre ordinateur. Il contient le pilote PostgreSQL,
+  qui exige que PostgreSQL soit installé sur la machine. Il sert
+  uniquement au déploiement en ligne, où Render l'utilise tout seul.
+  Le lanceur installe requirements.txt, c'est le bon fichier.
+
+
+  README.md  contient tout le reste :
+
+      section 5  →  brancher Google Drive et Google Sheets
+      section 6  →  ajouter une vraie entreprise cliente
+      section 7  →  déploiement détaillé et sauvegardes
+      section 8  →  où modifier quoi dans le code
+      section 9  →  dépannage
+
+  Après CHAQUE modification du code, lancez :
+
+      python test_app.py
+
+  Les 110 tests doivent tous passer. S'ils échouent, la modification
+  a cassé quelque chose.
+
+╚══════════════════════════════════════════════════════════════════════╝

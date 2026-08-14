@@ -1,0 +1,349 @@
+"""
+Modèles de données AK World.
+
+Deux périmètres coexistent dans le même journal d'opérations :
+  - PÉRIMÈTRE INTERNE  : opérations d'AK World, rattachées à un `departement`
+                          (commercial, comptabilité, RH, stock).
+  - PÉRIMÈTRE CLIENT   : opérations d'une TPE/PME accompagnée, rattachées à une
+                          `entreprise_id`.
+
+Une opération appartient toujours à l'un OU l'autre (jamais les deux).
+"""
+from datetime import datetime
+
+from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
+
+db = SQLAlchemy()
+
+
+# --------------------------------------------------------------------------
+# Énumérations métier
+# --------------------------------------------------------------------------
+
+class Role:
+    """Rôles applicatifs.
+
+    GERANT       : direction AK World — accès total (interne + tous les clients).
+    RESPONSABLE  : responsable d'un département interne — son département seul.
+    CONSULTANT   : consultant du cabinet — les entreprises clientes qui lui sont
+                   assignées (consultation, rapports, saisie corrective).
+    CLIENT       : gérant d'une TPE/PME accompagnée — son propre journal seul.
+    """
+    GERANT = 'gerant'
+    RESPONSABLE = 'responsable'
+    CONSULTANT = 'consultant'
+    CLIENT = 'client'
+
+    CHOIX = [GERANT, RESPONSABLE, CONSULTANT, CLIENT]
+    LABELS = {
+        GERANT: 'Gérant',
+        RESPONSABLE: 'Responsable de département',
+        CONSULTANT: 'Consultant cabinet',
+        CLIENT: 'Client accompagné',
+    }
+
+
+class Departement:
+    COMMERCIAL = 'commercial'
+    COMPTABILITE = 'comptabilite'
+    RH = 'rh'
+    STOCK = 'stock'
+
+    CHOIX = [COMMERCIAL, COMPTABILITE, RH, STOCK]
+    LABELS = {
+        COMMERCIAL: 'Commercial',
+        COMPTABILITE: 'Comptabilité',
+        RH: 'Ressources Humaines',
+        STOCK: 'Stock',
+    }
+
+
+class TypeOperation:
+    VENTE = 'vente'
+    ACHAT = 'achat'
+    AUTRE = 'autre'
+
+    CHOIX = [VENTE, ACHAT, AUTRE]
+    LABELS = {VENTE: 'Vente (entrée)', ACHAT: 'Achat (sortie)', AUTRE: 'Autre'}
+
+
+class ModePaiement:
+    CASH = 'cash'
+    MOBILE_MONEY = 'mobile_money'
+    BANQUE = 'banque'
+    CREDIT = 'credit'
+
+    CHOIX = [CASH, MOBILE_MONEY, BANQUE, CREDIT]
+    LABELS = {
+        CASH: 'Espèces',
+        MOBILE_MONEY: 'Mobile Money',
+        BANQUE: 'Banque',
+        CREDIT: 'Crédit',
+    }
+
+
+# Catégories proposées par défaut (l'utilisateur peut en saisir d'autres)
+CATEGORIES_DEFAUT = [
+    "Chiffre d'affaires",
+    "Vente de marchandises",
+    "Prestation de services",
+    "Achat marchandises",
+    "Achat matières premières",
+    "Frais généraux",
+    "Transport",
+    "Salaires",
+    "Loyer",
+    "Électricité / Eau",
+    "Communication",
+    "Impôts et taxes",
+    "Divers",
+]
+
+
+# --------------------------------------------------------------------------
+# Table d'association : consultants <-> entreprises suivies
+# --------------------------------------------------------------------------
+
+suivi_consultant = db.Table(
+    'suivi_consultant',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('entreprise_id', db.Integer, db.ForeignKey('entreprise.id'), primary_key=True),
+)
+
+
+# --------------------------------------------------------------------------
+# Entreprise accompagnée (TPE/PME cliente du cabinet)
+# --------------------------------------------------------------------------
+
+class Entreprise(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(150), nullable=False, unique=True)
+    secteur = db.Column(db.String(120))
+    contact = db.Column(db.String(100))
+    localisation = db.Column(db.String(150))
+    actif = db.Column(db.Boolean, default=True, nullable=False)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Dossier Drive et Google Sheet dédiés à cette entreprise (optionnels :
+    # si vides, la configuration globale de config.py est utilisée)
+    drive_folder_id = db.Column(db.String(120))
+    sheet_id = db.Column(db.String(120))
+
+    # Classeur publié servant de source de données à Looker Studio.
+    # Son identifiant reste stable : le rapport Looker construit dessus
+    # continue de fonctionner à chaque nouvelle publication.
+    sheet_rapport_id = db.Column(db.String(120))
+    sheet_rapport_url = db.Column(db.String(400))
+    derniere_publication = db.Column(db.DateTime)
+    looker_url = db.Column(db.String(400))
+
+    consultants = db.relationship(
+        'User', secondary=suivi_consultant, back_populates='entreprises_suivies'
+    )
+
+    def __repr__(self):
+        return f'<Entreprise {self.nom}>'
+
+
+# --------------------------------------------------------------------------
+# Utilisateur
+# --------------------------------------------------------------------------
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+
+    role = db.Column(db.String(30), nullable=False, default=Role.RESPONSABLE)
+    departement = db.Column(db.String(50))       # si RESPONSABLE
+    entreprise_id = db.Column(db.Integer, db.ForeignKey('entreprise.id'))  # si CLIENT
+
+    actif = db.Column(db.Boolean, default=True, nullable=False)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    derniere_connexion = db.Column(db.DateTime)
+
+    entreprise = db.relationship('Entreprise', foreign_keys=[entreprise_id])
+    entreprises_suivies = db.relationship(
+        'Entreprise', secondary=suivi_consultant, back_populates='consultants'
+    )
+
+    # ---- Mot de passe ----
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    # ---- Rôles ----
+
+    @property
+    def est_gerant(self):
+        return self.role == Role.GERANT
+
+    @property
+    def est_client(self):
+        return self.role == Role.CLIENT
+
+    @property
+    def est_consultant(self):
+        return self.role == Role.CONSULTANT
+
+    @property
+    def est_responsable(self):
+        return self.role == Role.RESPONSABLE
+
+    @property
+    def est_interne(self):
+        """Membre de l'équipe AK World (par opposition à un client accompagné)."""
+        return self.role in (Role.GERANT, Role.RESPONSABLE, Role.CONSULTANT)
+
+    def libelle_role(self):
+        base = Role.LABELS.get(self.role, self.role)
+        if self.est_responsable and self.departement:
+            return f"{base} — {Departement.LABELS.get(self.departement, self.departement)}"
+        if self.est_client and self.entreprise:
+            return f"{base} — {self.entreprise.nom}"
+        return base
+
+    # ---- Périmètre d'accès ----
+
+    def entreprises_accessibles(self):
+        """Entreprises accompagnées que cet utilisateur peut consulter."""
+        if self.est_gerant:
+            return Entreprise.query.order_by(Entreprise.nom).all()
+        if self.est_consultant:
+            return sorted(self.entreprises_suivies, key=lambda e: e.nom)
+        if self.est_client and self.entreprise:
+            return [self.entreprise]
+        return []
+
+    def peut_voir_entreprise(self, entreprise_id):
+        if entreprise_id is None:
+            return False
+        return any(e.id == entreprise_id for e in self.entreprises_accessibles())
+
+    def peut_voir_operation(self, operation):
+        if self.est_gerant:
+            return True
+        if operation.entreprise_id:
+            return self.peut_voir_entreprise(operation.entreprise_id)
+        # Opération interne : réservée au responsable du département concerné
+        return self.est_responsable and self.departement == operation.departement
+
+    def peut_modifier_operation(self, operation):
+        if self.est_gerant:
+            return True
+        if not self.peut_voir_operation(operation):
+            return False
+        if self.est_client:
+            # Le client ne modifie que ses propres saisies
+            return operation.cree_par_id == self.id
+        return True  # responsable de son département, consultant de son client
+
+    def peut_supprimer_operation(self, operation):
+        # Mêmes règles que la modification (traçabilité assurée par l'audit)
+        return self.peut_modifier_operation(operation)
+
+    def __repr__(self):
+        return f'<User {self.email} [{self.role}]>'
+
+
+# --------------------------------------------------------------------------
+# Clients finaux (les acheteurs, côté interne ou côté entreprise accompagnée)
+# --------------------------------------------------------------------------
+
+class Client(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(150), nullable=False)
+    contact = db.Column(db.String(100))
+    localisation = db.Column(db.String(150))
+    # NULL = carnet d'adresses interne AK World ; sinon carnet de l'entreprise
+    entreprise_id = db.Column(db.Integer, db.ForeignKey('entreprise.id'))
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    entreprise = db.relationship('Entreprise', backref='clients')
+
+    def __repr__(self):
+        return f'<Client {self.nom}>'
+
+
+# --------------------------------------------------------------------------
+# Opération (ligne de journal)
+# --------------------------------------------------------------------------
+
+class Operation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date_operation = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    type_operation = db.Column(db.String(20), nullable=False)
+    categorie = db.Column(db.String(100), nullable=False)
+
+    # Périmètre : l'un OU l'autre
+    departement = db.Column(db.String(50))
+    entreprise_id = db.Column(db.Integer, db.ForeignKey('entreprise.id'))
+
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    montant = db.Column(db.Float, nullable=False)
+    mode_paiement = db.Column(db.String(30), nullable=False)
+    reference = db.Column(db.String(100))
+    libelle = db.Column(db.String(255))
+
+    numero_facture = db.Column(db.String(50), unique=True)
+    fichier_url = db.Column(db.String(400))
+    fichier_local = db.Column(db.String(400))
+    synchro_sheet = db.Column(db.Boolean, default=False)
+
+    cree_par_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    date_modification = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    client = db.relationship('Client', backref='operations')
+    entreprise = db.relationship('Entreprise', backref='operations')
+    cree_par = db.relationship('User', backref='operations')
+
+    def signe(self):
+        """Vente = entrée (+1), Achat = sortie (-1), Autre traité en entrée."""
+        return -1 if self.type_operation == TypeOperation.ACHAT else 1
+
+    def montant_signe(self):
+        return self.montant * self.signe()
+
+    def libelle_perimetre(self):
+        if self.entreprise:
+            return self.entreprise.nom
+        return Departement.LABELS.get(self.departement, self.departement or '—')
+
+    def __repr__(self):
+        return f'<Operation {self.id} {self.type_operation} {self.montant}>'
+
+
+# --------------------------------------------------------------------------
+# Journal d'audit (traçabilité : qui a créé / modifié / supprimé quoi)
+# --------------------------------------------------------------------------
+
+class Audit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    action = db.Column(db.String(30), nullable=False)   # creation / modification / suppression
+    objet_type = db.Column(db.String(50), nullable=False)
+    objet_id = db.Column(db.Integer)
+    details = db.Column(db.Text)
+    date_action = db.Column(db.DateTime, default=datetime.utcnow)
+
+    utilisateur = db.relationship('User')
+
+    @staticmethod
+    def journaliser(user, action, objet_type, objet_id, details=''):
+        db.session.add(Audit(
+            user_id=user.id if user else None,
+            action=action,
+            objet_type=objet_type,
+            objet_id=objet_id,
+            details=details,
+        ))
+
+    def __repr__(self):
+        return f'<Audit {self.action} {self.objet_type}#{self.objet_id}>'

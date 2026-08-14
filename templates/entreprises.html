@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block titre %}Entreprises accompagnées{% endblock %}
+{% block contenu %}
+<div class="barre">
+  <div>
+    <h1>Entreprises accompagnées</h1>
+    <p class="sous-titre" style="margin:0;">Les TPE/PME suivies par {{ NOM_CABINET }}</p>
+  </div>
+  {% if current_user.est_cabinet %}
+  <a class="btn vert" href="{{ url_for('nouvelle_entreprise') }}">+ Nouvelle entreprise</a>
+  {% endif %}
+</div>
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Entreprise</th><th>Secteur</th><th>Localisation</th><th>Responsable(s) AK</th>
+    <th class="num">Opérations</th><th class="num">CA</th><th class="num">Résultat</th><th>Statut</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for e in entreprises %}
+    {% set stat = statistiques[e.id] %}
+    <tr>
+      <td><strong>{{ e.nom }}</strong>{% if e.contact %}<br><span style="font-size:12px;color:var(--doux);">{{ e.contact }}</span>{% endif %}</td>
+      <td>{{ e.secteur or '—' }}</td>
+      <td>{{ e.localisation or '—' }}</td>
+      <td style="font-size:12.5px;">{% for c in e.consultants %}{{ c.nom }}{% if not loop.last %}, {% endif %}{% else %}<span style="color:var(--rouge);">Non affecté</span>{% endfor %}</td>
+      <td class="num">{{ stat.operations }}</td>
+      <td class="num">{{ stat.ca|montant }}</td>
+      <td class="num" style="color:{{ 'var(--vert)' if stat.resultat >= 0 else 'var(--rouge)' }};">{{ stat.resultat|montant }}</td>
+      <td><span class="etiquette {{ 'vert' if e.actif else 'rouge' }}">{{ 'Actif' if e.actif else 'Inactif' }}</span></td>
+      <td style="white-space:nowrap;">
+        <a class="btn petit clair" href="{{ url_for('dashboard', entreprise_id=e.id) }}">Tableau de bord</a>
+        <a class="btn petit clair" href="{{ url_for('rapports', entreprise_id=e.id) }}">Rapports</a>
+        {% if current_user.est_cabinet %}
+        <a class="btn petit clair" href="{{ url_for('modifier_entreprise', entreprise_id=e.id) }}">Modifier</a>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="9" class="vide">
+      Aucune entreprise accompagnée pour le moment.
+      {% if current_user.est_cabinet %}Créez la première avec le bouton ci-dessus.{% endif %}
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

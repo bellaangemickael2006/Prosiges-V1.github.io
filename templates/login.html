@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block titre %}Connexion — {{ NOM_CABINET }}{% endblock %}
+{% block contenu %}
+<div class="ecran-connexion">
+  <div class="carte-connexion">
+    <div class="connexion-marque">
+      <img src="{{ url_for('static', filename='img/logo_ak_world.png') }}"
+           alt="{{ cabinet.raison_sociale if cabinet else NOM_CABINET }}">
+      <p class="connexion-slogan">
+        {{ cabinet.slogan if cabinet and cabinet.slogan else 'Assistance & conseil en gestion' }}
+      </p>
+    </div>
+
+    <h2>Connexion</h2>
+    <p class="sous-titre" style="text-align:center;margin-bottom:22px;">
+      Accédez à votre espace de gestion
+    </p>
+
+    <form method="post">
+      <div class="champ">
+        <label>Adresse email</label>
+        <input type="email" name="email" required autofocus autocomplete="username">
+      </div>
+      <div class="champ">
+        <label>Mot de passe</label>
+        <input type="password" name="password" required autocomplete="current-password">
+      </div>
+      <button class="btn" type="submit" style="width:100%;margin-top:4px;">Se connecter</button>
+    </form>
+
+    <p class="connexion-aide">
+      Mot de passe oublié&nbsp;? Contactez le gérant pour une réinitialisation.
+    </p>
+  </div>
+
+  <p class="connexion-pied">
+    {{ cabinet.raison_sociale if cabinet else NOM_CABINET }} — plateforme de gestion et de suivi comptable
+  </p>
+</div>
+
+<style>
+  .ecran-connexion{min-height:calc(100vh - 62px);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:32px 18px;
+    background:
+      radial-gradient(1100px 480px at 50% -8%, rgba(43,96,152,.10), transparent 60%),
+      var(--gris);
+    margin:-26px;}
+  .carte-connexion{width:100%;max-width:410px;background:#fff;
+    border:1px solid var(--bord);border-radius:16px;padding:34px 34px 26px;
+    box-shadow:var(--ombre-forte);}
+  .connexion-marque{text-align:center;padding-bottom:22px;margin-bottom:24px;
+    border-bottom:1px solid var(--bord);}
+  .connexion-marque img{max-width:220px;max-height:96px;width:auto;height:auto;
+    display:block;margin:0 auto;object-fit:contain;}
+  .connexion-slogan{margin-top:12px;font-size:12px;color:var(--doux);
+    text-transform:uppercase;letter-spacing:1.4px;font-weight:600;}
+  .carte-connexion h2{text-align:center;margin-bottom:2px;}
+  .connexion-aide{text-align:center;font-size:12.5px;color:var(--tres-doux);
+    margin-top:18px;line-height:1.5;}
+  .connexion-pied{margin-top:22px;font-size:12px;color:var(--tres-doux);
+    text-align:center;letter-spacing:.3px;}
+  @media(max-width:640px){
+    .ecran-connexion{margin:-16px;min-height:calc(100vh - 52px);}
+    .carte-connexion{padding:26px 22px 22px;}
+  }
+</style>
+{% endblock %}

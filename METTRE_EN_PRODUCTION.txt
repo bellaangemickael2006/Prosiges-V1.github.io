@@ -1,0 +1,250 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║            AK WORLD — METTRE LE SITE EN PRODUCTION                   ║
+║                     GitHub puis mise en ligne                        ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+  Comptez 30 à 45 minutes la première fois. Tout est gratuit.
+  Résultat : une adresse du type  https://akworld.onrender.com
+
+
+═══════════════════════════════════════════════════════════════════════
+  AVANT TOUT — RÉGÉNÉRER LA CLÉ GOOGLE
+═══════════════════════════════════════════════════════════════════════
+
+  Si votre fichier credentials.json a déjà été envoyé par message,
+  copié dans un document, ou partagé de quelque façon que ce soit,
+  il doit être considéré comme compromis.
+
+    1. https://console.cloud.google.com → projet ak-world-gestion
+    2. IAM et administration → Comptes de service → votre compte
+    3. Onglet « Clés » → supprimez l'ancienne clé
+    4. « Ajouter une clé » → « Créer une clé » → JSON
+    5. Remplacez credentials.json dans votre dossier
+
+  Tant que l'ancienne clé n'est pas supprimée, elle reste valable
+  et donne accès à votre Drive.
+
+
+═══════════════════════════════════════════════════════════════════════
+  ÉTAPE 1 — NETTOYER LES DONNÉES DE DÉMONSTRATION
+═══════════════════════════════════════════════════════════════════════
+
+  Votre base locale contient « Jus de Bella », « Quincaillerie Konan »
+  et 215 opérations fictives. Ne les emmenez pas en production.
+
+  Bonne nouvelle : la base n'est PAS publiée sur GitHub (.gitignore
+  l'exclut) et le site en ligne démarrera donc vide. Vous n'avez rien
+  à faire pour cela.
+
+  Si vous voulez aussi nettoyer votre copie locale :
+
+      python gerer_comptes.py purger-demo
+
+
+═══════════════════════════════════════════════════════════════════════
+  ÉTAPE 2 — CONTRÔLE DE SÉCURITÉ
+═══════════════════════════════════════════════════════════════════════
+
+      python verifier_avant_github.py
+
+  Doit afficher : « AUCUN PROBLÈME — vous pouvez publier sur GitHub. »
+
+  Sinon, corrigez ce qui est signalé avant de continuer.
+
+  ⚠  Pourquoi c'est important : un secret publié sur GitHub reste dans
+     l'historique du dépôt même après suppression du fichier. Un dépôt
+     privé n'y change rien — les robots qui scannent GitHub trouvent
+     ces clés en quelques minutes.
+
+
+═══════════════════════════════════════════════════════════════════════
+  ÉTAPE 3 — PUBLIER SUR GITHUB
+═══════════════════════════════════════════════════════════════════════
+
+  3.1 — Installer Git (si ce n'est pas déjà fait)
+
+      https://git-scm.com/downloads
+      Acceptez toutes les options par défaut.
+
+  3.2 — Créer le dépôt
+
+      Sur https://github.com → bouton « New »
+        · Repository name : akworld
+        · Private (recommandé) ou Public
+        · NE COCHEZ RIEN d'autre (pas de README, pas de .gitignore)
+        · « Create repository »
+
+  3.3 — Envoyer le code
+
+      Ouvrez un terminal DANS le dossier du projet, puis :
+
+          git init
+          git add .
+          git status
+
+      ⚠  Regardez la liste affichée par « git status ».
+         Vous NE devez PAS y voir : .env, credentials.json,
+         ak_world.db, .venv, venv.
+         Si l'un d'eux apparaît, ARRÊTEZ et relancez
+         verifier_avant_github.py.
+
+      Puis :
+
+          git commit -m "Application de gestion AK World"
+          git branch -M main
+          git remote add origin https://github.com/VOTRE_COMPTE/akworld.git
+          git push -u origin main
+
+      GitHub demandera vos identifiants. Le mot de passe classique ne
+      fonctionne plus : créez un jeton dans
+      Settings → Developer settings → Personal access tokens
+      → Generate new token (classic) → cochez « repo ».
+      Collez ce jeton à la place du mot de passe.
+
+
+═══════════════════════════════════════════════════════════════════════
+  ÉTAPE 4 — METTRE EN LIGNE AVEC RENDER
+═══════════════════════════════════════════════════════════════════════
+
+  4.1 — Créer le service
+
+      1. https://render.com → « Get Started » → connectez-vous
+         avec votre compte GitHub
+      2. Bouton « New » → « Blueprint »
+      3. Sélectionnez votre dépôt « akworld »
+      4. Cliquez « Apply »
+
+      Render lit le fichier render.yaml et configure tout seul :
+      le serveur web, la base PostgreSQL, la clé secrète, les
+      cookies sécurisés et le certificat HTTPS.
+
+      Attendez 3 à 5 minutes. Votre adresse s'affiche en haut.
+
+  4.2 — Première connexion
+
+      Ouvrez l'adresse et connectez-vous :
+
+          gerant@akworld.com  /  AkWorld2026!
+
+      ⚠  CHANGEZ CE MOT DE PASSE IMMÉDIATEMENT
+         (onglet « Mon profil »)
+
+      Ce mot de passe est écrit dans un fichier public de votre dépôt.
+      Tant qu'il n'est pas changé, n'importe qui peut entrer.
+
+  4.3 — Créer les comptes de votre équipe
+
+      Onglet « Utilisateurs » → « Créer un compte ».
+
+      Ou depuis le shell Render (onglet « Shell ») :
+
+          python gerer_comptes.py creer "Awa Traore" awa@akworld.ci MotDePasse123 consultant
+          python gerer_comptes.py creer "Yao Kouassi" yao@akworld.ci MotDePasse123 responsable commercial
+          python gerer_comptes.py liste
+
+
+═══════════════════════════════════════════════════════════════════════
+  ÉTAPE 5 — BRANCHER GOOGLE SUR LE SITE EN LIGNE
+═══════════════════════════════════════════════════════════════════════
+
+  Le fichier credentials.json n'est PAS sur GitHub — il faut donc
+  fournir son contenu à Render par variable d'environnement.
+
+      1. Sur Render : votre service → onglet « Environment »
+      2. « Add Environment Variable »
+      3. Key   : GOOGLE_CREDENTIALS_JSON
+         Value : ouvrez credentials.json dans un éditeur de texte,
+                 copiez TOUT son contenu (les accolades comprises)
+                 et collez-le ici
+      4. Ajoutez aussi :
+             GOOGLE_DRIVE_FOLDER_ID = <id de votre dossier Drive>
+             GOOGLE_SHEET_ID        = <id de votre Google Sheet>
+      5. « Save Changes » — Render redémarre automatiquement
+
+  L'application écrit ce contenu dans un fichier temporaire au
+  démarrage : aucun secret n'est stocké dans le code.
+
+
+═══════════════════════════════════════════════════════════════════════
+  ÉTAPE 6 — LE CLASSEUR LOOKER STUDIO
+═══════════════════════════════════════════════════════════════════════
+
+  ⚠  Point important avec un compte Google gratuit :
+
+     Un compte de service n'a pas d'espace de stockage Drive. Il ne
+     peut donc pas CRÉER de fichier — il ne peut qu'écrire dans un
+     fichier existant. Si vous laissez l'application créer le
+     classeur, elle échouera avec :
+
+         Service Accounts do not have storage quota
+
+  La solution :
+
+      1. Dans VOTRE Drive : Nouveau → Google Sheets
+         Nommez-le par exemple « AK World — Jus de Bella »
+      2. Partager → collez l'adresse du compte de service
+         (le champ client_email de credentials.json)
+         → droit ÉDITEUR
+      3. Copiez l'identifiant depuis l'URL :
+         docs.google.com/spreadsheets/d/IDENTIFIANT/edit
+      4. Dans l'application : Entreprises suivies → Modifier
+         → champ « ID du classeur de publication »
+         → collez l'identifiant → Enregistrer
+
+  L'application écrira désormais dans VOTRE classeur, dont vous
+  restez propriétaire. Plus d'erreur de quota.
+
+
+═══════════════════════════════════════════════════════════════════════
+  METTRE À JOUR LE SITE APRÈS UNE MODIFICATION
+═══════════════════════════════════════════════════════════════════════
+
+      python test_app.py            (les 71 tests doivent passer)
+      python verifier_avant_github.py
+
+      git add .
+      git commit -m "Description de la modification"
+      git push
+
+  Render redéploie automatiquement en 2 à 3 minutes.
+
+
+═══════════════════════════════════════════════════════════════════════
+  À SAVOIR SUR L'OFFRE GRATUITE RENDER
+═══════════════════════════════════════════════════════════════════════
+
+  · Le site s'endort après 15 minutes sans visite et met environ
+    50 secondes à se réveiller. Sans conséquence pour une démonstration.
+    Réveillez-le 2 minutes avant votre soutenance.
+
+  · La base PostgreSQL gratuite expire après 90 jours. Prévoyez une
+    sauvegarde (Render → base → « Backups ») ou passez à l'offre
+    payante si le projet doit durer.
+
+  · L'offre payante (7 $/mois) supprime la mise en veille.
+
+
+═══════════════════════════════════════════════════════════════════════
+  EN CAS DE PROBLÈME
+═══════════════════════════════════════════════════════════════════════
+
+  Le déploiement échoue
+      Render → onglet « Logs ». Cherchez la ligne rouge.
+      Cause fréquente : une dépendance manquante dans
+      requirements-production.txt
+
+  « Application Error » à l'ouverture
+      Vérifiez que la variable DATABASE_URL est bien renseignée
+      (Render la crée automatiquement via render.yaml)
+
+  Impossible de se connecter
+      Shell Render → python gerer_comptes.py liste
+      puis        → python gerer_comptes.py reparer
+
+  Google ne fonctionne pas en ligne
+      Vérifiez GOOGLE_CREDENTIALS_JSON dans Environment :
+      le JSON doit être collé en entier, accolades comprises.
+
+╚══════════════════════════════════════════════════════════════════════╝

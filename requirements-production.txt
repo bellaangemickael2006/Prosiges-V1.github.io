@@ -1,0 +1,16 @@
+# =====================================================================
+#  Déploiement en ligne (Render, VPS...)
+#
+#  Ajoute au socle : le serveur de production, le pilote PostgreSQL et
+#  le support Google.
+#
+#  ⚠  Ne PAS utiliser en local : psycopg2 exige que PostgreSQL soit
+#     installé sur la machine, ce qui est inutile pour une simple
+#     démonstration sur votre ordinateur (SQLite suffit).
+# =====================================================================
+
+-r requirements.txt
+-r requirements-google.txt
+
+gunicorn>=22.0.0,<24.0
+psycopg2-binary>=2.9.10,<3.0

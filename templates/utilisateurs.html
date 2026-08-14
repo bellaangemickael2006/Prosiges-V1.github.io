@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block titre %}Utilisateurs{% endblock %}
+{% block contenu %}
+
+<h1>Gestion des utilisateurs</h1>
+<p class="sous-titre">
+  {% if current_user.est_cabinet %}
+    Comptes du cabinet {{ NOM_CABINET }} et comptes des entreprises accompagnées
+  {% else %}
+    Comptes de {{ current_user.entreprise.nom if current_user.entreprise else 'votre entreprise' }}
+  {% endif %}
+</p>
+
+<div class="encart bleu" style="max-width:760px;">
+  <strong>Qui voit quoi</strong>
+  <ul style="margin:6px 0 0 18px;line-height:1.75;font-size:13.5px;">
+    {% for role in roles_creables %}
+      <li><b>{{ LABELS_ROLE[role] }}</b> — {{ DESCRIPTIONS_ROLE[role] }}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="panneau" style="max-width:760px;">
+  <h3 style="margin-top:0;">Créer un compte</h3>
+  <form method="post">
+    <div class="grille2">
+      <div class="champ"><label>Nom complet *</label><input type="text" name="nom" required></div>
+      <div class="champ"><label>Adresse e-mail *</label><input type="email" name="email" required></div>
+    </div>
+    <div class="champ">
+      <label>Mot de passe provisoire *</label>
+      <input type="text" name="password" required minlength="8" placeholder="8 caractères minimum">
+      <div class="aide">
+        Communiquez-le à la personne et demandez-lui de le changer à la
+        première connexion.
+      </div>
+    </div>
+
+    <div class="champ">
+      <label>Rôle *</label>
+      <select name="role" id="choix_role" onchange="ajusterRole()" required>
+        {% for role in roles_creables %}
+          <option value="{{ role }}">{{ LABELS_ROLE[role] }}</option>
+        {% endfor %}
+      </select>
+      <div class="aide" id="description_role"></div>
+    </div>
+
+    {% if current_user.est_cabinet %}
+    <div class="champ" id="bloc_departement" style="display:none;">
+      <label>Département interne</label>
+      <select name="departement">
+        {% for d in DEPARTEMENTS %}<option value="{{ d }}">{{ LABELS_DEPT[d] }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="champ" id="bloc_entreprise" style="display:none;">
+      <label>Entreprise de rattachement *</label>
+      <select name="entreprise_id">
+        {% for e in entreprises %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+      </select>
+      {% if not entreprises %}
+        <div class="aide">
+          Aucune entreprise créée. Créez-en une d'abord depuis l'onglet
+          « Entreprises ».
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="champ" id="bloc_suivies" style="display:none;">
+      <label>Entreprises suivies par ce consultant</label>
+      <select name="entreprises_suivies" multiple size="5">
+        {% for e in entreprises %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+      </select>
+      <div class="aide">Maintenez Ctrl (ou Cmd) pour en sélectionner plusieurs.</div>
+    </div>
+    {% endif %}
+
+    <button class="btn" type="submit">Créer le compte</button>
+  </form>
+</div>
+
+<div class="table-scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Nom</th><th>Adresse e-mail</th><th>Rôle</th><th>Périmètre</th>
+      <th>Dernière connexion</th><th>Statut</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for u in utilisateurs %}
+    <tr>
+      <td><strong>{{ u.nom }}</strong></td>
+      <td style="font-size:13px;">{{ u.email }}</td>
+      <td>
+        <span class="etiquette {{ 'or' if u.est_cabinet else ('vert' if u.est_gerant else 'gris') }}">
+          {{ LABELS_ROLE[u.role] }}
+        </span>
+      </td>
+      <td style="font-size:12.5px;">
+        {% if u.est_responsable %}{{ LABELS_DEPT.get(u.departement, '—') }}
+        {% elif u.est_client %}{{ u.entreprise.nom if u.entreprise else '—' }}
+        {% elif u.est_consultant %}
+          {% for e in u.entreprises_suivies %}{{ e.nom }}{% if not loop.last %}, {% endif %}{% else %}Aucune{% endfor %}
+        {% else %}Toutes les entreprises{% endif %}
+      </td>
+      <td style="font-size:12.5px;">
+        {{ u.derniere_connexion.strftime('%d/%m/%Y %H:%M') if u.derniere_connexion else 'Jamais' }}
+      </td>
+      <td>
+        <span class="etiquette {{ 'vert' if u.actif else 'rouge' }}">
+          {{ 'Actif' if u.actif else 'Désactivé' }}
+        </span>
+      </td>
+      <td style="white-space:nowrap;">
+        {% if u.id != current_user.id %}
+        <form class="inline" method="post" action="{{ url_for('basculer_utilisateur', user_id=u.id) }}">
+          <button class="btn petit clair" type="submit">{{ 'Désactiver' if u.actif else 'Activer' }}</button>
+        </form>
+        {% endif %}
+        <form class="inline" method="post" action="{{ url_for('reinitialiser_mot_de_passe', user_id=u.id) }}"
+              onsubmit="var p = prompt('Nouveau mot de passe pour {{ u.nom }} (8 caractères minimum) :'); if(!p){return false;} this.nouveau_mot_de_passe.value = p; return true;">
+          <input type="hidden" name="nouveau_mot_de_passe">
+          <button class="btn petit clair" type="submit">Réinitialiser</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="vide">Aucun compte pour le moment.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<script id="descriptions-roles" type="application/json">{{ DESCRIPTIONS_ROLE|tojson }}</script>
+<script>
+/* Les champs complémentaires dépendent du rôle : un responsable a un
+   département, un rôle côté entreprise a une entreprise de rattachement,
+   un consultant a une liste d'entreprises suivies. */
+var ROLES_ENTREPRISE = {{ ROLES_ENTREPRISE|tojson }};
+var DESCRIPTIONS = JSON.parse(document.getElementById('descriptions-roles').textContent);
+
+function afficher(identifiant, visible){
+  var bloc = document.getElementById(identifiant);
+  if(bloc) bloc.style.display = visible ? 'block' : 'none';
+}
+
+function ajusterRole(){
+  var role = document.getElementById('choix_role').value;
+  afficher('bloc_departement', role === 'responsable');
+  afficher('bloc_entreprise', ROLES_ENTREPRISE.indexOf(role) !== -1);
+  afficher('bloc_suivies', role === 'consultant');
+
+  var aide = document.getElementById('description_role');
+  if(aide) aide.textContent = DESCRIPTIONS[role] || '';
+}
+ajusterRole();
+</script>
+{% endblock %}

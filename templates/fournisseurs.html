@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block titre %}Fournisseurs{% endblock %}
+{% block contenu %}
+
+<h1>{{ 'Mes fournisseurs' if current_user.est_client else 'Fournisseurs' }}</h1>
+<p class="sous-titre">{{ entreprise.nom }} — {{ fournisseurs|length }} fournisseur(s)</p>
+
+{% if peut_modifier %}
+<div class="panneau" style="max-width:660px;">
+  <h3 style="margin-top:0;">Ajouter un fournisseur</h3>
+  <form method="post">
+    <div class="grille2">
+      <div class="champ"><label>Nom *</label><input type="text" name="nom" required></div>
+      <div class="champ"><label>Téléphone</label><input type="text" name="contact" placeholder="Ex : 07 00 00 00 00"></div>
+    </div>
+    <div class="grille2">
+      <div class="champ"><label>Email</label><input type="email" name="email"></div>
+      <div class="champ"><label>Spécialité</label><input type="text" name="specialite" placeholder="Ex : Emballages, matières premières"></div>
+    </div>
+    <div class="grille2">
+      <div class="champ"><label>Adresse</label><input type="text" name="adresse"></div>
+      <div class="champ"><label>Localisation</label><input type="text" name="localisation" placeholder="Ex : Treichville, Abidjan"></div>
+    </div>
+    <button class="btn" type="submit">Ajouter</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Nom</th><th>Spécialité</th><th>Téléphone</th><th>Localisation</th><th>Ajouté le</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for f in fournisseurs %}
+    <tr>
+      <td><strong>{{ f.nom }}</strong>{% if f.email %}<br><span style="font-size:12px;color:var(--doux);">{{ f.email }}</span>{% endif %}</td>
+      <td>{{ f.specialite or '—' }}</td>
+      <td>{{ f.contact or '—' }}</td>
+      <td>{{ f.localisation or '—' }}</td>
+      <td>{{ f.date_creation.strftime('%d/%m/%Y') }}</td>
+      <td><a class="btn petit clair" href="{{ url_for('fiche_fournisseur', fournisseur_id=f.id) }}">Voir la fiche</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="vide">Aucun fournisseur enregistré.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

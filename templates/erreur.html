@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block titre %}Erreur {{ code }}{% endblock %}
+{% block contenu %}
+<div class="panneau" style="max-width:520px;margin:50px auto;text-align:center;">
+  <h1 style="font-size:44px;">{{ code }}</h1>
+  <p style="margin:12px 0 22px;color:var(--doux);">{{ message }}</p>
+  <a class="btn" href="{{ url_for('accueil') }}">Retour à l'accueil</a>
+</div>
+{% endblock %}

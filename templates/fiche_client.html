@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block titre %}{{ fiche.client.nom }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ fiche.client.nom }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      Fiche client{% if entreprise %} — {{ entreprise.nom }}{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if entreprise %}
+    <a class="btn vert" href="{{ url_for('nouveau_document', type='recu', **scope_args) }}">+ Nouveau document</a>
+    {% endif %}
+    <a class="btn clair" href="{{ url_for('clients', **scope_args) }}">Retour</a>
+  </div>
+</div>
+
+<div class="cartes">
+  <div class="carte accent"><h4>Total facturé</h4><div class="valeur">{{ fiche.total_facture|montant }} <span class="unite">{{ DEVISE }}</span></div></div>
+  <div class="carte vert"><h4>Total payé</h4><div class="valeur">{{ fiche.total_paye|montant }} <span class="unite">{{ DEVISE }}</span></div></div>
+  <div class="carte {{ 'rouge' if fiche.reste_du > 0 else 'vert' }}">
+    <h4>Reste à payer</h4>
+    <div class="valeur">{{ fiche.reste_du|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    <div class="note">{{ 'Ce client vous doit encore' if fiche.reste_du > 0 else 'Aucune dette' }}</div>
+  </div>
+  <div class="carte"><h4>Documents émis</h4><div class="valeur">{{ fiche.nombre_documents }}</div>
+    <div class="note">{{ fiche.proformas|length }} proforma(s), {{ fiche.recus|length }} reçu(s)</div></div>
+</div>
+
+<div class="grille-fiche">
+
+  <div class="panneau">
+    <h3 style="margin-top:0;">Coordonnées</h3>
+    {% if peut_modifier %}
+    <form method="post" action="{{ url_for('modifier_client', client_id=fiche.client.id) }}">
+      <div class="champ"><label>Nom *</label><input type="text" name="nom" required value="{{ fiche.client.nom }}"></div>
+      <div class="champ"><label>Téléphone</label><input type="text" name="contact" value="{{ fiche.client.contact or '' }}"></div>
+      <div class="champ"><label>Localisation</label><input type="text" name="localisation" value="{{ fiche.client.localisation or '' }}"></div>
+      <button class="btn" type="submit">Enregistrer</button>
+    </form>
+    {% else %}
+    <table>
+      <tr><th>Téléphone</th><td>{{ fiche.client.contact or '—' }}</td></tr>
+      <tr><th>Localisation</th><td>{{ fiche.client.localisation or '—' }}</td></tr>
+    </table>
+    {% endif %}
+    <table style="margin-top:16px;">
+      <tr><th>Client depuis</th><td>{{ fiche.client.date_creation.strftime('%d/%m/%Y') }}</td></tr>
+      <tr><th>Dernière transaction</th><td>{{ fiche.derniere_transaction.strftime('%d/%m/%Y') if fiche.derniere_transaction else 'Aucune' }}</td></tr>
+      <tr><th>CA au journal</th><td>{{ fiche.ca_journal|montant }} {{ DEVISE }}</td></tr>
+    </table>
+  </div>
+
+  <div>
+    <h3 style="margin-top:0;">Ses factures et reçus</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th class="num">Montant</th>
+        <th class="num">Payé</th><th class="num">Reste</th><th>Statut</th><th>Télécharger</th></tr></thead>
+      <tbody>
+      {% for d in fiche.documents %}
+        <tr {{ 'style=opacity:.55' if d.statut == 'annule' }}>
+          <td><a href="{{ url_for('voir_document', document_id=d.id) }}">{{ d.numero }}</a></td>
+          <td>{{ d.date_document.strftime('%d/%m/%Y') }}</td>
+          <td><span class="etiquette {{ 'vert' if d.type_document=='recu' else '' }}">{{ 'Reçu' if d.type_document=='recu' else 'Proforma' }}</span></td>
+          <td class="num">{{ d.montant_ttc|montant }}</td>
+          <td class="num">{{ d.montant_paye|montant }}</td>
+          <td class="num" style="color:{{ 'var(--rouge)' if d.reste_a_payer > 0 else 'var(--vert)' }};">{{ d.reste_a_payer|montant }}</td>
+          <td><span class="etiquette {{ 'vert' if d.statut=='regle' else ('rouge' if d.statut=='annule' else 'or') }}">{{ LABELS_STATUT[d.statut] }}</span></td>
+          <td><a class="btn petit clair" href="{{ url_for('telecharger_document', document_id=d.id) }}">PDF</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="vide">Aucun document émis pour ce client.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Historique des transactions au journal</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Date</th><th>Type</th><th>Catégorie</th><th>Libellé</th><th class="num">Montant</th><th>Paiement</th></tr></thead>
+      <tbody>
+      {% for op in fiche.operations[:25] %}
+        <tr>
+          <td>{{ op.date_operation.strftime('%d/%m/%Y') }}</td>
+          <td><span class="etiquette {{ 'vert' if op.type_operation=='vente' else 'rouge' }}">{{ LABELS_TYPE_COURT[op.type_operation] }}</span></td>
+          <td>{{ op.categorie|rubrique }}</td>
+          <td>{{ op.libelle or '—' }}</td>
+          <td class="num">{{ op.montant|montant }}</td>
+          <td>{{ LABELS_MODE[op.mode_paiement] }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="vide">Aucune transaction enregistrée.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block titre %}Familles de produits — {{ entreprise.nom }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>Familles de produits</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ entreprise.nom }} — chaque famille devient une ligne de chiffre
+      d'affaires du compte d'exploitation
+    </p>
+  </div>
+  <a class="btn clair" href="{{ url_for('catalogue', **scope_args) }}">Voir le catalogue</a>
+</div>
+
+<div class="encart bleu">
+  <strong>Pourquoi regrouper les articles en familles</strong>
+  Le compte d'exploitation ne montre pas un chiffre d'affaires global mais un
+  chiffre d'affaires par famille : c'est ce qui permet de voir ce qui marche
+  et ce qui ne marche pas. Un éleveur ne crée pas une ligne par race de
+  chien — il crée la famille « Canins », y range ses articles, et lit le
+  chiffre d'affaires de l'ensemble.
+</div>
+
+{% if sans_famille %}
+<div class="encart">
+  <strong>{{ sans_famille }} article(s) sans famille</strong>
+  Leur chiffre d'affaires apparaît sur la ligne « Chiffre d'affaires (non
+  ventilé) ». Rattachez-les à une famille depuis leur fiche pour qu'ils
+  soient comptés séparément.
+</div>
+{% endif %}
+
+<div class="grille-fiche">
+  {% if peut_modifier %}
+  <div class="panneau">
+    <h3 style="margin-top:0;">Nouvelle famille</h3>
+    <form method="post" action="{{ url_for('familles', **scope_args) }}">
+      <div class="champ">
+        <label for="nom">Nom de la famille *</label>
+        <input type="text" id="nom" name="nom" required
+               placeholder="Canins, Volaille, Boissons…">
+      </div>
+      <div class="champ">
+        <label for="description">Description</label>
+        <input type="text" id="description" name="description"
+               placeholder="Ce que regroupe cette famille">
+      </div>
+      <div class="champ">
+        <label for="ordre">Ordre d'affichage</label>
+        <input type="number" id="ordre" name="ordre" value="0" step="1">
+        <div class="aide">
+          Détermine la position de la ligne dans le compte d'exploitation.
+        </div>
+      </div>
+      <button class="btn" type="submit">Créer la famille</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div>
+    {% if familles %}
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px;">Ordre</th>
+            <th>Famille</th>
+            <th>Description</th>
+            <th class="num">Articles</th>
+            {% if peut_modifier %}<th style="width:110px;"></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for famille in familles %}
+          <tr>
+            {% if peut_modifier %}
+            <form method="post" id="f{{ famille.id }}"
+                  action="{{ url_for('modifier_famille', famille_id=famille.id) }}"></form>
+            <td><input form="f{{ famille.id }}" type="number" name="ordre"
+                       value="{{ famille.ordre or 0 }}" step="1"
+                       style="width:56px;padding:5px;border:1px solid var(--bord);border-radius:5px;"></td>
+            <td><input form="f{{ famille.id }}" type="text" name="nom"
+                       value="{{ famille.nom }}"
+                       style="width:100%;padding:5px 7px;border:1px solid var(--bord);border-radius:5px;"></td>
+            <td><input form="f{{ famille.id }}" type="text" name="description"
+                       value="{{ famille.description or '' }}"
+                       style="width:100%;padding:5px 7px;border:1px solid var(--bord);border-radius:5px;"></td>
+            <td class="num">{{ famille.articles|length }}</td>
+            <td class="actions" style="gap:6px;">
+              <button form="f{{ famille.id }}" class="btn petit" type="submit">Enregistrer</button>
+              <form method="post" class="inline"
+                    action="{{ url_for('supprimer_famille', famille_id=famille.id) }}"
+                    onsubmit="return confirm('Supprimer la famille « {{ famille.nom }} » ? Les articles concernés restent au catalogue, sans famille.');">
+                <button class="btn petit rouge" type="submit">×</button>
+              </form>
+            </td>
+            {% else %}
+            <td>{{ famille.ordre or 0 }}</td>
+            <td>{{ famille.nom }}</td>
+            <td>{{ famille.description or '—' }}</td>
+            <td class="num">{{ famille.articles|length }}</td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="zone-vide">
+      Aucune famille créée pour le moment.<br>
+      Tant qu'il n'y en a pas, tout le chiffre d'affaires est regroupé sur une
+      seule ligne du compte d'exploitation.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block titre %}Stock{% endblock %}
+{% block contenu %}
+
+<h1>{{ 'Mon stock' if current_user.est_client else 'Gestion du stock' }}</h1>
+<p class="sous-titre">{{ entreprise.nom }} — {{ articles|length }} produit(s) suivi(s)</p>
+
+{% if ruptures %}
+<div class="alerte-stock" style="background:#fdeceb;border-left-color:var(--rouge);">
+  <strong>{{ ruptures|length }} produit(s) en rupture</strong>
+  <p style="margin-top:6px;font-size:14px;">
+    {% for a in ruptures %}{{ a.designation }}{% if not loop.last %} · {% endif %}{% endfor %}
+  </p>
+</div>
+{% endif %}
+
+{% if alertes %}
+<div class="alerte-stock">
+  <strong>{{ alertes|length }} produit(s) au seuil d'alerte</strong>
+  <p style="margin-top:6px;font-size:14px;">
+    {% for a in alertes %}{{ a.designation }} : {{ a.quantite_stock|round|int }} {{ a.unite }} restant(s){% if not loop.last %} · {% endif %}{% endfor %}
+  </p>
+</div>
+{% endif %}
+
+<div class="cartes">
+  <div class="carte accent"><h4>Valeur du stock</h4><div class="valeur">{{ valeur_stock|montant }} <span class="unite">{{ DEVISE }}</span></div></div>
+  <div class="carte"><h4>Produits suivis</h4><div class="valeur">{{ articles|length }}</div></div>
+  <div class="carte {{ 'rouge' if alertes else 'vert' }}"><h4>Seuils atteints</h4><div class="valeur">{{ alertes|length }}</div></div>
+  <div class="carte {{ 'rouge' if ruptures else 'vert' }}"><h4>Ruptures</h4><div class="valeur">{{ ruptures|length }}</div></div>
+</div>
+
+{% if peut_modifier and articles %}
+<div class="panneau">
+  <h3 style="margin-top:0;">Enregistrer un mouvement</h3>
+  <form method="post" action="{{ url_for('nouveau_mouvement', **scope_args) }}">
+    <div class="grille2">
+      <div class="champ">
+        <label>Article *</label>
+        <select name="article_id" required>
+          {% for a in articles %}
+            <option value="{{ a.id }}">{{ a.designation }} ({{ a.quantite_stock|round|int }} {{ a.unite }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="champ">
+        <label>Type de mouvement *</label>
+        <select name="type_mouvement" id="type_mvt" onchange="basculerMouvement()">
+          <option value="entree">Entrée — réapprovisionnement</option>
+          <option value="sortie">Sortie — perte, casse, usage interne</option>
+          <option value="ajustement">Ajustement — corriger la quantité réelle</option>
+        </select>
+      </div>
+    </div>
+    <div class="grille2">
+      <div class="champ">
+        <label>Quantité *</label>
+        <input type="number" step="0.01" min="0" name="quantite" required placeholder="0">
+        <div class="aide" id="aide_quantite">Quantité qui entre en stock.</div>
+      </div>
+      <div class="champ">
+        <label>Date</label>
+        <input type="date" name="date_mouvement" value="{{ aujourdhui }}">
+      </div>
+    </div>
+
+    <div id="bloc_entree">
+      <div class="grille2">
+        <div class="champ">
+          <label>Fournisseur</label>
+          <select name="fournisseur_id">
+            <option value="">— Non précisé —</option>
+            {% for f in fournisseurs %}<option value="{{ f.id }}">{{ f.nom }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="champ">
+          <label>Montant de l'achat ({{ DEVISE }})</label>
+          <input type="number" step="1" min="0" name="montant_achat" placeholder="0">
+          <div class="aide">Si renseigné, l'achat est porté au journal en charge variable.</div>
+        </div>
+      </div>
+      <div class="champ">
+        <label>Mode de paiement de l'achat</label>
+        <select name="mode_paiement">
+          {% for m, libelle in LABELS_MODE.items() %}<option value="{{ m }}">{{ libelle }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="champ">
+      <label>Motif</label>
+      <input type="text" name="motif" placeholder="Ex : Livraison du 12/08, casse en manutention...">
+    </div>
+    <button class="btn vert" type="submit">Enregistrer le mouvement</button>
+  </form>
+</div>
+{% endif %}
+
+<h3>État du stock</h3>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Article</th><th>Famille</th><th class="num">Quantité</th><th class="num">Seuil d'alerte</th>
+    <th class="num">Prix d'achat</th><th class="num">Valeur</th><th>État</th></tr></thead>
+  <tbody>
+  {% for a in articles %}
+    <tr>
+      <td><strong>{{ a.designation }}</strong>{% if a.reference %}<br><span style="font-size:12px;color:var(--doux);">{{ a.reference }}</span>{% endif %}</td>
+      <td>{{ a.famille.nom if a.famille else '— non ventilé —' }}</td>
+      <td class="num" style="font-weight:600;">{{ a.quantite_stock|round(2) }} {{ a.unite }}</td>
+      <td class="num">{{ a.seuil_alerte|round|int }}</td>
+      <td class="num">{{ a.prix_achat|montant }}</td>
+      <td class="num">{{ a.valeur_stock|montant }}</td>
+      <td>
+        {% if a.en_rupture %}<span class="etiquette rouge">Rupture</span>
+        {% elif a.en_alerte %}<span class="etiquette or">Seuil atteint</span>
+        {% else %}<span class="etiquette vert">Suffisant</span>{% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="vide">
+      Aucun produit suivi en stock. Ajoutez des produits dans
+      <a href="{{ url_for('catalogue', **scope_args) }}">Produits &amp; services</a>.
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h3>Derniers mouvements</h3>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Date</th><th>Article</th><th>Type</th><th class="num">Quantité</th>
+    <th class="num">Stock après</th><th>Motif</th><th>Enregistré par</th></tr></thead>
+  <tbody>
+  {% for m in mouvements %}
+    <tr>
+      <td>{{ m.date_mouvement.strftime('%d/%m/%Y') }}</td>
+      <td>{{ m.article.designation if m.article else '—' }}</td>
+      <td><span class="etiquette {{ 'vert' if m.type_mouvement=='entree' else ('rouge' if m.type_mouvement=='sortie' else 'or') }}">{{ LABELS_MOUVEMENT[m.type_mouvement] }}</span></td>
+      <td class="num">{{ '+' if m.type_mouvement=='entree' else ('−' if m.type_mouvement=='sortie' else '=') }}{{ m.quantite|round(2) }}</td>
+      <td class="num">{{ m.quantite_apres|round(2) if m.quantite_apres is not none else '—' }}</td>
+      <td>{{ m.motif or '—' }}</td>
+      <td>{{ m.cree_par.nom if m.cree_par else '—' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="vide">Aucun mouvement enregistré.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p style="margin-top:18px;font-size:12.5px;color:var(--doux);">
+  Les sorties de stock sont automatiques à chaque reçu émis : vous n'avez à saisir
+  que les entrées et les corrections.
+</p>
+
+<script>
+function basculerMouvement(){
+  var type = document.getElementById('type_mvt').value;
+  document.getElementById('bloc_entree').style.display = (type === 'entree') ? 'block' : 'none';
+  var aide = document.getElementById('aide_quantite');
+  if(type === 'entree'){ aide.textContent = 'Quantité qui entre en stock.'; }
+  else if(type === 'sortie'){ aide.textContent = 'Quantité qui sort du stock.'; }
+  else { aide.textContent = 'Quantité réelle constatée : elle remplacera la quantité actuelle.'; }
+}
+basculerMouvement();
+</script>
+{% endblock %}

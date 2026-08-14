@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block titre %}{{ 'Modifier' if operation else 'Nouvelle' }} opération{% endblock %}
+{% block contenu %}
+
+<h1>{{ 'Modifier une opération' if operation else 'Enregistrer une opération' }}</h1>
+<p class="sous-titre">
+  {% if operation %}
+    Facture {{ operation.numero_facture }} — les comptes seront recalculés après validation.
+  {% else %}
+    Remplissez les champs ci-dessous. Vos comptes et votre trésorerie se mettront à jour tout seuls.
+  {% endif %}
+</p>
+
+<div class="panneau" style="max-width:640px;">
+<form method="post" enctype="multipart/form-data">
+
+  <div class="grille2">
+    <div class="champ">
+      <label>Date de l'opération *</label>
+      <input type="date" name="date_operation" value="{{ aujourdhui }}" required>
+    </div>
+    <div class="champ">
+      <label>Sens de l'opération *</label>
+      <select name="type_operation" id="type_operation" required
+              onchange="rafraichirRubriques()">
+        {% for t in TYPES_OPERATION %}
+          <option value="{{ t }}" {{ 'selected' if operation and operation.type_operation == t }}>{{ LABELS_TYPE[t] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  {% if not operation %}
+    {% if current_user.est_cabinet %}
+    <div class="champ">
+      <label>Rattacher à *</label>
+      <select name="entreprise_id" id="choix_perimetre" onchange="basculerPerimetre()">
+        <option value="">— Périmètre interne {{ NOM_CABINET }} —</option>
+        {% for e in entreprises %}
+          <option value="{{ e.id }}">{{ e.nom }}</option>
+        {% endfor %}
+      </select>
+      <div class="aide">Choisissez une entreprise accompagnée, ou laissez vide pour une opération interne.</div>
+    </div>
+    <div class="champ" id="bloc_departement">
+      <label>Département interne *</label>
+      <select name="departement">
+        {% for d in DEPARTEMENTS %}<option value="{{ d }}">{{ LABELS_DEPT[d] }}</option>{% endfor %}
+      </select>
+    </div>
+    {% elif current_user.est_consultant %}
+    <div class="champ">
+      <label>Entreprise concernée *</label>
+      <select name="entreprise_id" required>
+        {% for e in entreprises %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="champ">
+    <label>Catégorie *</label>
+    <select name="categorie" id="categorie" required></select>
+    <div class="aide">
+      La liste est fermée : c'est elle qui alimente les lignes du compte
+      d'exploitation et du compte de trésorerie. Elle change selon que vous
+      enregistrez une entrée ou une sortie.
+    </div>
+  </div>
+
+  <div class="champ">
+    <label>Libellé (description courte)</label>
+    <input type="text" name="libelle" value="{{ operation.libelle if operation else '' }}"
+           placeholder="Ex : Vente de 20 cartons de jus">
+  </div>
+
+  <div class="champ">
+    <label>Client</label>
+    <input type="text" name="client_nom" list="liste_clients"
+           value="{{ operation.client.nom if operation and operation.client else '' }}"
+           placeholder="Tapez les premières lettres du nom">
+    <datalist id="liste_clients">
+      {% for c in clients %}<option value="{{ c.nom }}">{% endfor %}
+    </datalist>
+    <div class="aide">Si le client n'existe pas encore, il sera créé automatiquement.</div>
+  </div>
+
+  <div class="grille2">
+    <div class="champ">
+      <label>Montant ({{ DEVISE }}) *</label>
+      <input type="number" step="1" min="0" name="montant" required
+             value="{{ operation.montant|round|int if operation else '' }}" placeholder="0">
+    </div>
+    <div class="champ">
+      <label>Mode de paiement *</label>
+      <select name="mode_paiement" required>
+        {% for m, libelle in LABELS_MODE.items() %}
+          <option value="{{ m }}" {{ 'selected' if operation and operation.mode_paiement == m }}>{{ libelle }}</option>
+        {% endfor %}
+      </select>
+      <div class="aide">« Crédit » = pas encore encaissé.</div>
+    </div>
+  </div>
+
+  <div class="champ">
+    <label>Référence (n° de reçu)</label>
+    <input type="text" name="reference" value="{{ operation.reference if operation else '' }}"
+           placeholder="Ex : REC-0042">
+  </div>
+
+  <div class="champ">
+    <label>Justificatif (photo du reçu, facture...)</label>
+    <input type="file" name="justificatif" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.doc,.docx,.xls,.xlsx">
+    <div class="aide">
+      {% if google_actif %}Le fichier sera archivé automatiquement dans Google Drive.
+      {% else %}Le fichier sera conservé sur le serveur (Google Drive non configuré).{% endif %}
+      10 Mo maximum.
+    </div>
+    {% if operation and operation.fichier_url %}
+      <div class="aide">Justificatif actuel : <a href="{{ operation.fichier_url }}" target="_blank" rel="noopener">ouvrir dans Drive</a></div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+    <button class="btn" type="submit">{{ 'Enregistrer les modifications' if operation else 'Enregistrer' }}</button>
+    {% if not operation %}
+      <button class="btn vert" type="submit" name="continuer" value="1">Enregistrer et en saisir une autre</button>
+    {% endif %}
+    <a class="btn clair" href="{{ url_for('journal') }}">Annuler</a>
+  </div>
+</form>
+</div>
+
+<script id="rubriques-entree" type="application/json">{{ rubriques_entree|tojson }}</script>
+<script id="rubriques-sortie" type="application/json">{{ rubriques_sortie|tojson }}</script>
+<script>
+function basculerPerimetre(){
+  var choix = document.getElementById('choix_perimetre');
+  var bloc = document.getElementById('bloc_departement');
+  if(!choix || !bloc) return;
+  bloc.style.display = choix.value ? 'none' : 'block';
+}
+
+/* La liste des catégories dépend du sens de l'opération : une entrée
+   propose les familles de produits et les encaissements, une sortie
+   propose les postes de charges. On regroupe par famille de rubriques
+   pour que la liste reste lisible. */
+var RUBRIQUES = {
+  vente: JSON.parse(document.getElementById('rubriques-entree').textContent),
+  achat: JSON.parse(document.getElementById('rubriques-sortie').textContent)
+};
+var CATEGORIE_ACTUELLE = {{ (operation.categorie if operation else '')|tojson }};
+
+function rafraichirRubriques(){
+  var type = document.getElementById('type_operation');
+  var liste = document.getElementById('categorie');
+  if(!type || !liste) return;
+
+  var choisie = liste.value || CATEGORIE_ACTUELLE;
+  var options = RUBRIQUES[type.value] || [];
+  liste.innerHTML = '';
+
+  var groupeCourant = null, conteneur = null;
+  options.forEach(function(option){
+    if(option.groupe !== groupeCourant){
+      groupeCourant = option.groupe;
+      conteneur = document.createElement('optgroup');
+      conteneur.label = groupeCourant;
+      liste.appendChild(conteneur);
+    }
+    var element = document.createElement('option');
+    element.value = option.code;
+    element.textContent = option.libelle;
+    if(option.code === choisie) element.selected = true;
+    conteneur.appendChild(element);
+  });
+}
+
+basculerPerimetre();
+rafraichirRubriques();
+</script>
+{% endblock %}

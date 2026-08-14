@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% block titre %}Paramètres du cabinet{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>Paramètres du cabinet</h1>
+    <p class="sous-titre" style="margin:0;">
+      Identité d'{{ cabinet.raison_sociale }} : logo, coordonnées et signature
+    </p>
+  </div>
+</div>
+
+<div class="encart bleu">
+  <strong>Où ces informations apparaissent</strong>
+  Le logo du cabinet habille l'en-tête de l'application et les rapports
+  d'accompagnement que vous rédigez pour vos clients. Il ne figure pas sur
+  les factures de vos clients : celles-ci portent le logo de l'entreprise
+  émettrice, renseigné dans son propre profil de facturation.
+</div>
+
+<form method="post" enctype="multipart/form-data">
+
+  <div class="panneau">
+    <h3 style="margin-top:0;">Identité</h3>
+    <div class="grille2">
+      <div class="champ">
+        <label for="raison_sociale">Raison sociale *</label>
+        <input type="text" id="raison_sociale" name="raison_sociale" required
+               value="{{ cabinet.raison_sociale or '' }}">
+      </div>
+      <div class="champ">
+        <label for="slogan">Signature de marque</label>
+        <input type="text" id="slogan" name="slogan" value="{{ cabinet.slogan or '' }}"
+               placeholder="Assistance &amp; conseil en gestion">
+        <div class="aide">Affichée sous le nom, en haut de chaque écran.</div>
+      </div>
+    </div>
+    <div class="grille2">
+      <div class="champ">
+        <label for="adresse">Adresse</label>
+        <input type="text" id="adresse" name="adresse" value="{{ cabinet.adresse or '' }}">
+      </div>
+      <div class="champ">
+        <label for="ville">Ville</label>
+        <input type="text" id="ville" name="ville" value="{{ cabinet.ville or '' }}"
+               placeholder="Abidjan (RCI) — Cocody">
+      </div>
+    </div>
+    <div class="grille3">
+      <div class="champ">
+        <label for="telephone">Téléphone</label>
+        <input type="text" id="telephone" name="telephone" value="{{ cabinet.telephone or '' }}">
+      </div>
+      <div class="champ">
+        <label for="email">Adresse e-mail</label>
+        <input type="email" id="email" name="email" value="{{ cabinet.email or '' }}">
+      </div>
+      <div class="champ">
+        <label for="site_web">Site web</label>
+        <input type="text" id="site_web" name="site_web" value="{{ cabinet.site_web or '' }}">
+      </div>
+    </div>
+    <div class="grille2">
+      <div class="champ">
+        <label for="rccm">RCCM</label>
+        <input type="text" id="rccm" name="rccm" value="{{ cabinet.rccm or '' }}">
+      </div>
+      <div class="champ">
+        <label for="compte_contribuable">Compte contribuable</label>
+        <input type="text" id="compte_contribuable" name="compte_contribuable"
+               value="{{ cabinet.compte_contribuable or '' }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="panneau">
+    <h3 style="margin-top:0;">Logo et signature</h3>
+    <div class="grille2">
+      <div>
+        <div class="apercu-image">
+          {% if cabinet.logo %}
+            <img src="{{ url_for('image_hebergee', chemin=cabinet.logo.split('/')[-1]) }}" alt="Logo du cabinet">
+          {% else %}
+            <span class="sans">Aucun logo chargé</span>
+          {% endif %}
+        </div>
+        <div class="champ">
+          <label for="logo">Logo du cabinet</label>
+          <input type="file" id="logo" name="logo" accept=".png,.jpg,.jpeg,.gif">
+          <div class="aide">
+            PNG ou JPG. Un fond transparent donne le meilleur rendu sur
+            l'en-tête bleu.
+          </div>
+        </div>
+        {% if cabinet.logo %}
+        <div class="champ case">
+          <input type="checkbox" id="retirer_logo" name="retirer_logo" value="1">
+          <label for="retirer_logo">Retirer le logo actuel</label>
+        </div>
+        {% endif %}
+      </div>
+
+      <div>
+        <div class="apercu-image">
+          {% if cabinet.signature %}
+            <img src="{{ url_for('image_hebergee', chemin=cabinet.signature.split('/')[-1]) }}" alt="Signature">
+          {% else %}
+            <span class="sans">Aucune signature chargée</span>
+          {% endif %}
+        </div>
+        <div class="champ">
+          <label for="signature">Signature ou cachet</label>
+          <input type="file" id="signature" name="signature" accept=".png,.jpg,.jpeg,.gif">
+          <div class="aide">
+            Reprise sous la mention « LA DIRECTION » des rapports.
+          </div>
+        </div>
+        <div class="champ">
+          <label for="signataire">Nom du signataire</label>
+          <input type="text" id="signataire" name="signataire"
+                 value="{{ cabinet.signataire or '' }}">
+        </div>
+        {% if cabinet.signature %}
+        <div class="champ case">
+          <input type="checkbox" id="retirer_signature" name="retirer_signature" value="1">
+          <label for="retirer_signature">Retirer la signature actuelle</label>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="champ" style="margin-top:6px;">
+      <div class="apercu-image">
+        {% if cabinet.logo_fdfp %}
+          <img src="{{ url_for('image_hebergee', chemin=cabinet.logo_fdfp.split('/')[-1]) }}" alt="Logo FDFP">
+        {% else %}
+          <span class="sans">Logo FDFP par défaut (fourni avec l'application)</span>
+        {% endif %}
+      </div>
+      <label for="logo_fdfp">Logo FDFP (couverture des rapports)</label>
+      <input type="file" id="logo_fdfp" name="logo_fdfp" accept=".png,.jpg,.jpeg,.gif">
+      <div class="aide">Apparaît sur la couverture, sous « Agréé par le ».</div>
+    </div>
+  </div>
+
+  <div class="panneau">
+    <h3 style="margin-top:0;">Préambule des rapports</h3>
+    <p style="font-size:13px;color:var(--doux);margin-bottom:14px;">
+      Ces textes composent les 4 premières pages de chaque rapport (couverture,
+      sommaire, présentation, habilitations) et les bandeaux répétés en tête et
+      pied de page. Une ligne par élément dans les listes.
+    </p>
+    <div class="grille2">
+      <div class="champ">
+        <label for="type_rapport">Titre de couverture</label>
+        <input type="text" id="type_rapport" name="type_rapport"
+               value="{{ cabinet.type_rapport or '' }}"
+               placeholder="RAPPORT DE MISSION D'ÉTAT DES LIEUX">
+      </div>
+      <div class="champ">
+        <label for="entete_pages">Bandeau d'en-tête (répété sur chaque page)</label>
+        <input type="text" id="entete_pages" name="entete_pages"
+               value="{{ cabinet.entete_pages or '' }}">
+      </div>
+    </div>
+    {% for id, libelle, aide in [
+        ('domaines_activite', "Domaines d'activité (couverture)", 'Un par ligne.'),
+        ('distinctions', 'Distinctions', 'Un prix par ligne.'),
+        ('contacts_referent', 'Contacts du référent', 'Un contact par ligne.'),
+        ('presentation', 'Présentation du cabinet', 'Une ligne commençant par ## devient un sous-titre encadré (bande bleue) ; « - » fait une puce.'),
+        ('habilitations_fdfp', "Domaines d'habilitation FDFP", 'Un domaine par ligne (numérotés automatiquement).')] %}
+    <div class="champ">
+      <label for="{{ id }}">{{ libelle }}</label>
+      <textarea id="{{ id }}" name="{{ id }}" rows="{{ 8 if id == 'presentation' else 4 }}"
+        style="width:100%;padding:10px;border:1px solid var(--bord-fort);border-radius:7px;font-family:inherit;font-size:13.5px;line-height:1.6;">{{ cabinet[id] or '' }}</textarea>
+      <div class="aide">{{ aide }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="panneau">
+    <h3 style="margin-top:0;">Coordonnées bancaires et mentions légales</h3>
+    <div class="grille2">
+      <div class="champ">
+        <label for="banque">Banque</label>
+        <input type="text" id="banque" name="banque" value="{{ cabinet.banque or '' }}">
+      </div>
+      <div class="champ">
+        <label for="numero_compte">Numéro de compte / IBAN</label>
+        <input type="text" id="numero_compte" name="numero_compte"
+               value="{{ cabinet.numero_compte or '' }}">
+      </div>
+    </div>
+    <div class="champ">
+      <label for="pied_legal">Bandeau légal de bas de page</label>
+      <input type="text" id="pied_legal" name="pied_legal"
+             value="{{ cabinet.pied_legal or '' }}"
+             placeholder="{{ cabinet.ligne_pied_legal() }}">
+      <div class="aide">
+        Laissez vide pour qu'il soit composé automatiquement à partir des
+        champs ci-dessus.
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" type="submit">Enregistrer les paramètres</button>
+  </div>
+</form>
+
+{% endblock %}

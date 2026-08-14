@@ -1,0 +1,80 @@
+{# =====================================================================
+   Tableau d'un compte détaillé : une ligne par rubrique, et pour chaque
+   mois trois colonnes — Prévu, Réalisé, Écart.
+
+   Utilisé par le compte d'exploitation et par le compte de trésorerie,
+   qui partagent exactement la même ossature.
+   ===================================================================== #}
+
+{% macro cellule(valeur, classe='') %}
+  <td class="{{ classe }}{{ ' zero' if not valeur|round(0, 'common') }}">
+    {{ valeur|montant }}
+  </td>
+{% endmacro %}
+
+{% macro cellule_ecart(valeur, classe='ecart') %}
+  {% set arrondi = valeur|round(0, 'common') %}
+  <td class="{{ classe }}{% if arrondi > 0 %} positif{% elif arrondi < 0 %} negatif{% else %} zero{% endif %}">
+    {{ '+' if arrondi > 0 }}{{ valeur|montant }}
+  </td>
+{% endmacro %}
+
+{% macro ligne(donnees, classe='') %}
+  <tr class="{{ classe }}">
+    <td class="libelle">{{ donnees.libelle }}</td>
+    {% for index in range(12) %}
+      {{ cellule(donnees.prevu[index]) }}
+      {{ cellule(donnees.realise[index]) }}
+      {{ cellule_ecart(donnees.ecart[index]) }}
+    {% endfor %}
+    {{ cellule(donnees.total_prevu, 'total-annee') }}
+    {{ cellule(donnees.total_realise, 'total-annee') }}
+    {{ cellule_ecart(donnees.total_ecart, 'total-annee') }}
+  </tr>
+{% endmacro %}
+
+{% macro tableau(compte) %}
+<div class="table-scroll">
+  <table class="compte">
+    <thead>
+      <tr class="mois">
+        <th class="libelle" rowspan="2">Libellé</th>
+        {% for mois in compte.mois %}
+          <th colspan="3">{{ mois.libelle }}</th>
+        {% endfor %}
+        <th colspan="3">Total {{ compte.annee }}</th>
+      </tr>
+      <tr class="colonnes">
+        {% for mois in compte.mois %}
+          <th>Prévu</th><th>Réalisé</th><th>Écart</th>
+        {% endfor %}
+        <th>Prévu</th><th>Réalisé</th><th>Écart</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for section in compte.sections %}
+        <tr class="section">
+          <td class="libelle" colspan="{{ 1 + 12 * 3 + 3 }}">{{ section.titre }}</td>
+        </tr>
+        {% for rubrique in section.lignes %}
+          {{ ligne(rubrique) }}
+        {% endfor %}
+        {{ ligne(section.total, 'total-section') }}
+
+        {# La marge brute s'intercale entre les charges variables et fixes #}
+        {% if section.code == 'variables' and compte.marge_brute %}
+          {{ ligne(compte.marge_brute, 'calcul') }}
+        {% endif %}
+      {% endfor %}
+
+      {% if compte.resultat %}
+        {{ ligne(compte.resultat, 'calcul') }}
+      {% endif %}
+      {% if compte.solde_debut %}
+        {{ ligne(compte.solde_debut, 'solde') }}
+        {{ ligne(compte.solde_fin, 'solde') }}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}

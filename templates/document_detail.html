@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block titre %}{{ document.numero }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ LABELS_TYPEDOC[document.type_document] }} {{ document.numero }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ entreprise.nom }} — {{ document.date_document.strftime('%d/%m/%Y') }}
+      <span class="etiquette {{ 'vert' if document.statut=='regle' else ('rouge' if document.statut=='annule' else 'or') }}">{{ LABELS_STATUT[document.statut] }}</span>
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a class="btn vert" href="{{ url_for('telecharger_document', document_id=document.id) }}">Télécharger le PDF</a>
+    <a class="btn clair" href="{{ url_for('ventes', **scope_args) }}">Retour</a>
+  </div>
+</div>
+
+<div class="apercu-doc">
+  <div class="entete">
+    <div>
+      <div style="font-size:17px;font-weight:700;">{{ profil.raison_sociale or entreprise.nom }}</div>
+      <div style="font-size:12.5px;color:var(--doux);line-height:1.6;margin-top:5px;">
+        {% if profil.adresse %}{{ profil.adresse }}<br>{% endif %}
+        {% if profil.ville %}{{ profil.ville }}<br>{% endif %}
+        {% if profil.telephone %}Tél. : {{ profil.telephone }}<br>{% endif %}
+        {% if profil.email %}{{ profil.email }}<br>{% endif %}
+        {% if profil.rccm %}RCCM : {{ profil.rccm }}{% endif %}
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:19px;font-weight:700;">{{ 'REÇU' if document.type_document=='recu' else 'FACTURE PROFORMA' }}</div>
+      <div style="font-size:12.5px;line-height:1.9;margin-top:8px;">
+        <span style="color:var(--doux);">Date :</span> <strong>{{ document.date_document.strftime('%d/%m/%Y') }}</strong><br>
+        <span style="color:var(--doux);">Numéro :</span> <strong>{{ document.numero }}</strong><br>
+        {% if document.date_echeance %}<span style="color:var(--doux);">Échéance :</span> <strong>{{ document.date_echeance.strftime('%d/%m/%Y') }}</strong><br>{% endif %}
+        <span style="color:var(--doux);">Conditions :</span> <strong>{{ LABELS_CONDITION[document.condition_vente] }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:20px;">
+    <div style="font-size:11.5px;font-weight:700;color:var(--doux);letter-spacing:.5px;">CLIENT</div>
+    {% if document.client %}
+      <div style="margin-top:5px;font-size:14px;"><strong>{{ document.client.nom }}</strong></div>
+      <div style="font-size:13px;color:var(--doux);">
+        {% if document.client.localisation %}{{ document.client.localisation }}<br>{% endif %}
+        {% if document.client.contact %}{{ document.client.contact }}{% endif %}
+      </div>
+      <a href="{{ url_for('fiche_client', client_id=document.client.id) }}" style="font-size:12.5px;">Voir sa fiche →</a>
+    {% else %}
+      <div style="margin-top:5px;font-size:14px;">Client de passage</div>
+    {% endif %}
+  </div>
+
+  {% if document.note %}
+  <p style="font-size:13px;color:var(--doux);margin-bottom:16px;">
+    <strong>Informations complémentaires :</strong> {{ document.note }}
+  </p>
+  {% endif %}
+
+  <table style="margin-bottom:18px;">
+    <thead><tr>
+      <th>Désignation</th><th class="num">Qté</th><th>Unité</th>
+      <th class="num">Prix unitaire</th><th class="num">Total</th>
+    </tr></thead>
+    <tbody>
+    {% for l in document.lignes %}
+      <tr>
+        <td>{{ l.designation }}</td>
+        <td class="num">{{ l.quantite|round(2) }}</td>
+        <td>{{ l.unite }}</td>
+        <td class="num">{{ l.prix_unitaire|montant }}</td>
+        <td class="num">{{ l.total_ligne|montant }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totaux">
+    {% if profil.regime_tva %}
+    <div><span>Total HT</span><span>{{ document.montant_ht|montant }} {{ DEVISE }}</span></div>
+    <div><span>TVA ({{ profil.taux_tva|round|int }} %)</span><span>{{ document.montant_tva|montant }} {{ DEVISE }}</span></div>
+    {% endif %}
+    <div class="grand"><span>TOTAL</span><span>{{ document.montant_ttc|montant }} {{ DEVISE }}</span></div>
+    {% if document.type_document == 'recu' %}
+    <div><span>Montant payé</span><span style="color:var(--vert);font-weight:600;">{{ document.montant_paye|montant }} {{ DEVISE }}</span></div>
+    <div><span>Reste à payer</span><span style="color:{{ 'var(--rouge)' if document.reste_a_payer > 0 else 'var(--vert)' }};font-weight:700;">{{ document.reste_a_payer|montant }} {{ DEVISE }}</span></div>
+    {% endif %}
+  </div>
+</div>
+
+{% if peut_modifier and document.statut != 'annule' %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px;align-items:start;">
+
+  {% if document.type_document == 'recu' and document.reste_a_payer > 0 %}
+  <div class="panneau">
+    <h3 style="margin-top:0;">Enregistrer un encaissement</h3>
+    <p style="font-size:13px;color:var(--doux);margin-bottom:14px;">
+      Le journal et la trésorerie seront mis à jour automatiquement.
+    </p>
+    <form method="post" action="{{ url_for('encaisser_document', document_id=document.id) }}">
+      <div class="champ">
+        <label>Montant reçu ({{ DEVISE }})</label>
+        <input type="number" step="1" min="1" name="montant" required
+               value="{{ document.reste_a_payer|round|int }}">
+      </div>
+      <div class="champ">
+        <label>Mode de paiement</label>
+        <select name="mode_paiement">
+          {% for m, libelle in LABELS_MODE.items() %}
+            <option value="{{ m }}" {{ 'selected' if document.mode_paiement == m }}>{{ libelle }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="champ">
+        <label>Référence</label>
+        <input type="text" name="reference" placeholder="N° de transaction">
+      </div>
+      <button class="btn vert" type="submit">Enregistrer l'encaissement</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if document.type_document == 'proforma' %}
+  <div class="panneau">
+    <h3 style="margin-top:0;">Le client a payé ?</h3>
+    <p style="font-size:13px;color:var(--doux);margin-bottom:14px;">
+      Établissez le reçu directement à partir de cette proforma — aucune ressaisie,
+      le stock et le journal seront mis à jour.
+    </p>
+    <form method="post" action="{{ url_for('convertir_document', document_id=document.id) }}">
+      <div class="champ">
+        <label>Conditions</label>
+        <select name="condition_vente">
+          <option value="comptant">Payé en totalité</option>
+          <option value="credit">Paiement partiel</option>
+        </select>
+      </div>
+      <div class="champ">
+        <label>Montant payé ({{ DEVISE }})</label>
+        <input type="number" step="1" min="0" name="montant_paye" value="{{ document.montant_ttc|round|int }}">
+      </div>
+      <div class="champ">
+        <label>Mode de paiement</label>
+        <select name="mode_paiement">
+          {% for m, libelle in LABELS_MODE.items() %}<option value="{{ m }}">{{ libelle }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn vert" type="submit">Établir le reçu</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="panneau">
+    <h3 style="margin-top:0;">Suivi</h3>
+    <table>
+      <tr><th>Créé par</th><td>{{ document.cree_par.nom if document.cree_par else '—' }}</td></tr>
+      <tr><th>Créé le</th><td>{{ document.date_creation.strftime('%d/%m/%Y à %H:%M') }}</td></tr>
+      <tr><th>Écriture au journal</th><td>{{ document.ecritures|length ~ ' écriture(s)' if document.comptabilise else 'Non' }}</td></tr>
+      <tr><th>Stock déduit</th><td>{{ 'Oui' if document.stock_deduit else 'Non' }}</td></tr>
+      {% if document.reference_paiement %}
+      <tr><th>Référence paiement</th><td>{{ document.reference_paiement }}</td></tr>
+      {% endif %}
+    </table>
+    <form method="post" action="{{ url_for('annuler_doc', document_id=document.id) }}" style="margin-top:16px;"
+          onsubmit="return confirm('Annuler ce document ?\n\nL\'écriture comptable et les mouvements de stock seront repris.');">
+      <button class="btn rouge petit" type="submit">Annuler ce document</button>
+    </form>
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}

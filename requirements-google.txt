@@ -1,0 +1,18 @@
+# =====================================================================
+#  Extension facultative : Google Drive et Google Sheets
+#
+#  À installer UNIQUEMENT si vous voulez l'archivage automatique des
+#  justificatifs dans Drive et le journal partagé dans Sheets.
+#  Voir README.md, section 5.
+#
+#  Commande :
+#      venv\Scripts\pip install -r requirements-google.txt     (Windows)
+#      ./venv/bin/pip install -r requirements-google.txt       (Mac/Linux)
+#
+#  L'application fonctionne parfaitement sans : les justificatifs sont
+#  alors conservés localement dans le dossier uploads/.
+# =====================================================================
+
+google-api-python-client>=2.140.0,<3.0
+google-auth>=2.34.0,<3.0
+google-auth-oauthlib>=1.2.1,<2.0

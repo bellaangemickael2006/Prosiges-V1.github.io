@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block titre %}{{ 'Modifier' if entreprise else 'Nouvelle' }} entreprise{% endblock %}
+{% block contenu %}
+<h1>{{ 'Modifier une entreprise' if entreprise else 'Nouvelle entreprise accompagnée' }}</h1>
+<p class="sous-titre">Créez la fiche de la TPE/PME, puis créez-lui un compte utilisateur dans l'onglet « Utilisateurs ».</p>
+
+<div class="panneau" style="max-width:640px;">
+<form method="post">
+  <div class="champ">
+    <label>Nom de l'entreprise *</label>
+    <input type="text" name="nom" required value="{{ entreprise.nom if entreprise else '' }}">
+  </div>
+  <div class="grille2">
+    <div class="champ">
+      <label>Secteur d'activité</label>
+      <input type="text" name="secteur" value="{{ entreprise.secteur if entreprise else '' }}" placeholder="Ex : Restauration, Commerce général">
+    </div>
+    <div class="champ">
+      <label>Contact</label>
+      <input type="text" name="contact" value="{{ entreprise.contact if entreprise else '' }}" placeholder="Téléphone ou email">
+    </div>
+  </div>
+  <div class="champ">
+    <label>Localisation</label>
+    <input type="text" name="localisation" value="{{ entreprise.localisation if entreprise else '' }}" placeholder="Ex : Yopougon, Abidjan">
+  </div>
+
+  <div class="champ">
+    <label>Responsable(s) AK en charge du suivi</label>
+    <select name="consultants" multiple size="4">
+      {% for c in consultants %}
+        <option value="{{ c.id }}" {{ 'selected' if entreprise and c in entreprise.consultants }}>{{ c.nom }}</option>
+      {% endfor %}
+    </select>
+    <div class="aide">Les consultants sélectionnés ici apparaissent comme responsables de cette entreprise dans la liste « Entreprises » et sur son tableau de bord. Maintenez Ctrl (ou Cmd) pour en sélectionner plusieurs. Créez d'abord les comptes consultants si la liste est vide.</div>
+  </div>
+
+  <h3>Google (facultatif)</h3>
+  <div class="champ">
+    <label>ID du dossier Google Drive dédié</label>
+    <input type="text" name="drive_folder_id" value="{{ entreprise.drive_folder_id if entreprise else '' }}" placeholder="Laisser vide pour création automatique">
+    <div class="aide">Si vide et Google configuré, un sous-dossier au nom de l'entreprise est créé automatiquement.</div>
+  </div>
+  <div class="champ">
+    <label>ID du Google Sheet dédié (journal ligne à ligne)</label>
+    <input type="text" name="sheet_id" value="{{ entreprise.sheet_id if entreprise else '' }}" placeholder="Laisser vide pour utiliser le Sheet global">
+    <div class="aide">Permet de donner à chaque entreprise son propre journal partagé.</div>
+  </div>
+  <div class="champ">
+    <label>ID du classeur de publication Google Sheets</label>
+    <input type="text" name="sheet_rapport_id" value="{{ entreprise.sheet_rapport_id if entreprise else '' }}" placeholder="Laisser vide pour création automatique">
+    <div class="aide">
+      <strong>À renseigner si vous utilisez un compte Google gratuit.</strong>
+      Un compte de service n'a pas d'espace de stockage Drive : il ne peut pas
+      créer de fichier. Créez donc le classeur vous-même dans votre Drive,
+      partagez-le en <em>Éditeur</em> avec l'adresse du compte de service, puis
+      collez ici l'identifiant qui figure dans son URL
+      (<code>.../spreadsheets/d/<strong>IDENTIFIANT</strong>/edit</code>).
+      L'application se contentera alors d'écrire dedans.
+    </div>
+  </div>
+
+  {% if entreprise %}
+  <div class="champ">
+    <label><input type="checkbox" name="actif" style="width:auto;" {{ 'checked' if entreprise.actif }}> Entreprise active</label>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;gap:10px;margin-top:18px;">
+    <button class="btn" type="submit">Enregistrer</button>
+    <a class="btn clair" href="{{ url_for('entreprises') }}">Annuler</a>
+  </div>
+</form>
+</div>
+{% endblock %}

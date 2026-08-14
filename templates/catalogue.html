@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block titre %}Produits et services{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>Produits et services</h1>
+    <p class="sous-titre" style="margin:0;">{{ entreprise.nom }} — {{ articles|length }} article(s) au catalogue</p>
+  </div>
+  {% if peut_modifier %}
+  <a class="btn vert" href="{{ url_for('nouvel_article', **scope_args) }}">+ Nouveau</a>
+  {% endif %}
+</div>
+
+{% if alertes %}
+<div class="alerte-stock">
+  <strong>{{ alertes|length }} produit(s) au seuil d'alerte</strong>
+  <p style="margin-top:6px;font-size:14px;">
+    {% for a in alertes %}{{ a.designation }} ({{ a.quantite_stock|round|int }} {{ a.unite }}){% if not loop.last %} · {% endif %}{% endfor %}
+    — <a href="{{ url_for('stock', **scope_args) }}">réapprovisionner →</a>
+  </p>
+</div>
+{% endif %}
+
+<div class="cartes">
+  <div class="carte"><h4>Produits</h4><div class="valeur">{{ nombre_produits }}</div></div>
+  <div class="carte"><h4>Services</h4><div class="valeur">{{ nombre_services }}</div></div>
+  <div class="carte accent"><h4>Valeur du stock</h4><div class="valeur">{{ valeur_stock|montant }} <span class="unite">{{ DEVISE }}</span></div></div>
+  <div class="carte {{ 'rouge' if alertes else '' }}"><h4>Alertes stock</h4><div class="valeur">{{ alertes|length }}</div></div>
+</div>
+
+<form method="get" class="filtres">
+  {% if scope_args.entreprise_id %}<input type="hidden" name="entreprise_id" value="{{ scope_args.entreprise_id }}">{% endif %}
+  <div class="champ">
+    <label>Recherche</label>
+    <input type="text" name="q" value="{{ recherche }}" placeholder="Désignation, référence...">
+  </div>
+  <div class="champ">
+    <label>Nature</label>
+    <select name="nature" onchange="this.form.submit()">
+      <option value="">Tous</option>
+      <option value="produit" {{ 'selected' if filtre_nature=='produit' }}>Produits</option>
+      <option value="service" {{ 'selected' if filtre_nature=='service' }}>Services</option>
+    </select>
+  </div>
+  <button class="btn" type="submit">Filtrer</button>
+  <a class="btn clair" href="{{ url_for('catalogue', **scope_args) }}">Réinitialiser</a>
+</form>
+
+<div class="table-scroll">
+<table>
+  <thead><tr>
+    <th>Référence</th><th>Désignation</th><th>Nature</th><th>Famille</th>
+    <th class="num">Prix de vente</th><th class="num">Stock</th><th>État</th><th>Actions</th>
+  </tr></thead>
+  <tbody>
+  {% for a in articles %}
+    <tr {{ 'style=opacity:.5' if not a.actif }}>
+      <td style="font-size:12px;">{{ a.reference or '—' }}</td>
+      <td><strong>{{ a.designation }}</strong>{% if a.description %}<br><span style="font-size:12px;color:var(--doux);">{{ a.description[:60] }}</span>{% endif %}</td>
+      <td><span class="etiquette {{ 'vert' if a.nature=='produit' else '' }}">{{ LABELS_NATURE[a.nature] }}</span></td>
+      <td>{{ a.famille.nom if a.famille else '— non ventilé —' }}</td>
+      <td class="num">{{ a.prix_vente|montant }}</td>
+      <td class="num">{% if a.suit_stock %}{{ a.quantite_stock|round|int }} {{ a.unite }}{% else %}—{% endif %}</td>
+      <td>
+        {% if not a.actif %}<span class="etiquette rouge">Retiré</span>
+        {% elif a.en_rupture %}<span class="etiquette rouge">Rupture</span>
+        {% elif a.en_alerte %}<span class="etiquette or">Seuil atteint</span>
+        {% else %}<span class="etiquette vert">Disponible</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap;">
+        {% if peut_modifier %}
+        <a class="btn petit clair" href="{{ url_for('modifier_article', article_id=a.id, **scope_args) }}">Modifier</a>
+        {% if a.actif %}
+        <form class="inline" method="post" action="{{ url_for('supprimer_article', article_id=a.id, **scope_args) }}"
+              onsubmit="return confirm('Retirer cet article du catalogue ?');">
+          <button class="btn petit rouge" type="submit">Retirer</button>
+        </form>
+        {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="vide">
+      Aucun article. {% if peut_modifier %}Commencez par <a href="{{ url_for('nouvel_article', **scope_args) }}">ajouter un produit ou un service</a>.{% endif %}
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

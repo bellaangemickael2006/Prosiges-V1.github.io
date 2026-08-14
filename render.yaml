@@ -1,0 +1,63 @@
+# =====================================================================
+#  Déploiement automatique sur Render.com
+#
+#  Render lit ce fichier et configure TOUT seul : le serveur web, la base
+#  PostgreSQL, la clé secrète, les cookies sécurisés et le HTTPS.
+#
+#  Marche à suivre :
+#    1. Poussez ce projet sur un dépôt GitHub
+#    2. Sur render.com : New → Blueprint → sélectionnez le dépôt
+#    3. Cliquez sur « Apply »
+#
+#  Aucune variable à saisir à la main : la SECRET_KEY est générée par
+#  Render, et l'URL de la base est injectée automatiquement.
+# =====================================================================
+
+services:
+  - type: web
+    name: akworld
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-production.txt
+    startCommand: gunicorn "app:app" --workers 2 --timeout 120
+    healthCheckPath: /connexion
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+      # Clé de session générée automatiquement par Render
+      - key: SECRET_KEY
+        generateValue: true
+
+      # Cookies sécurisés (Render fournit le HTTPS automatiquement)
+      - key: COOKIE_SECURE
+        value: "true"
+
+      # Connexion à la base PostgreSQL déclarée plus bas
+      - key: DATABASE_URL
+        fromDatabase:
+          name: akworld-db
+          property: connectionString
+
+      - key: NOM_CABINET
+        value: AK World
+
+      # Crée les tables et le compte gérant au premier démarrage
+      - key: AUTO_INIT
+        value: "true"
+
+      # ---- Google Drive / Sheets (facultatif) --------------------
+      # À renseigner plus tard depuis le tableau de bord Render,
+      # onglet Environment. Voir README.md section 5.
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+
+databases:
+  - name: akworld-db
+    plan: free
+    databaseName: akworld
+    user: akworld

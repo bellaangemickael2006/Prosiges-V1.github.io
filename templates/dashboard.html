@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% block titre %}Tableau de bord — {{ NOM_CABINET }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>Tableau de bord</h1>
+    <p class="sous-titre" style="margin:0;">{{ titre_perimetre }} — exercice {{ annee }}</p>
+    {% if entreprise and not current_user.est_client %}
+    <p class="sous-titre" style="margin:2px 0 0;font-size:12.5px;">
+      Responsable(s) AK :
+      {% for c in entreprise.consultants %}{{ c.nom }}{% if not loop.last %}, {% endif %}
+      {% else %}<span style="color:var(--rouge);">aucun consultant affecté — voir <a href="{{ url_for('modifier_entreprise', entreprise_id=entreprise.id) }}">Paramètres de l'entreprise</a></span>{% endfor %}
+    </p>
+    {% endif %}
+  </div>
+  <div class="actions">
+    <a class="btn clair" href="{{ url_for('export_excel', annee=annee, **scope_args) }}">Exporter Excel</a>
+    <a class="btn" href="{{ url_for('rapports', annee=annee, **scope_args) }}">Générer un rapport</a>
+  </div>
+</div>
+
+<div class="cartes" style="margin-bottom:22px;">
+  {% if current_user.peut_analyser %}
+  <a class="carte lien" href="{{ url_for('compte_exploitation', **scope_args) }}">
+    <h4>Compte d'exploitation</h4>
+    <p style="margin:4px 0 0;font-size:12.5px;color:var(--doux);">Charges et produits détaillés</p>
+  </a>
+  <a class="carte lien" href="{{ url_for('compte_tresorerie', **scope_args) }}">
+    <h4>Compte de trésorerie</h4>
+    <p style="margin:4px 0 0;font-size:12.5px;color:var(--doux);">Encaissements et décaissements</p>
+  </a>
+  {% endif %}
+  {% if current_user.peut_budgeter %}
+  <a class="carte lien" href="{{ url_for('budget_accueil', **scope_args) }}">
+    <h4>Budget</h4>
+    <p style="margin:4px 0 0;font-size:12.5px;color:var(--doux);">Prévisionnel et suivi budgétaire</p>
+  </a>
+  {% endif %}
+  <a class="carte lien" href="{{ url_for('ventes', **scope_args) }}">
+    <h4>Ventes</h4>
+    <p style="margin:4px 0 0;font-size:12.5px;color:var(--doux);">Factures, devis et bons de livraison</p>
+  </a>
+</div>
+
+{% if current_user.est_cabinet or current_user.est_consultant %}
+<form method="get" class="filtres">
+  {% if current_user.est_cabinet %}
+  <div class="champ">
+    <label>Département interne</label>
+    <select name="departement" onchange="this.form.submit()">
+      <option value="">Tous les départements</option>
+      {% for d in DEPARTEMENTS %}
+        <option value="{{ d }}" {{ 'selected' if d == filtre_departement }}>{{ LABELS_DEPT[d] }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="champ">
+    <label>Entreprise accompagnée</label>
+    <select name="entreprise_id" onchange="this.form.submit()">
+      <option value="">{{ 'Périmètre interne' if current_user.est_cabinet else '— choisir —' }}</option>
+      {% for e in entreprises %}
+        <option value="{{ e.id }}" {{ 'selected' if e.id == filtre_entreprise }}>{{ e.nom }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="champ">
+    <label>Exercice</label>
+    <select name="annee" onchange="this.form.submit()">
+      {% for a in range(annee_courante + 1, annee_courante - 5, -1) %}
+        <option value="{{ a }}" {{ 'selected' if a == annee }}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+{% else %}
+<form method="get" class="filtres">
+  <div class="champ">
+    <label>Exercice</label>
+    <select name="annee" onchange="this.form.submit()">
+      {% for a in range(annee_courante + 1, annee_courante - 5, -1) %}
+        <option value="{{ a }}" {{ 'selected' if a == annee }}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+{% endif %}
+
+<div class="cartes">
+  <div class="carte vert accent">
+    <h4>Chiffre d'affaires</h4>
+    <div class="valeur">{{ exploitation.chiffre_affaires|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    {% if evolution.var_ca is not none %}
+      <div class="note">{{ '+' if evolution.var_ca >= 0 else '' }}{{ '%.1f'|format(evolution.var_ca) }} % vs {{ annee - 1 }}</div>
+    {% endif %}
+  </div>
+  <div class="carte rouge">
+    <h4>Charges</h4>
+    <div class="valeur">{{ exploitation.charges|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    {% if evolution.var_charges is not none %}
+      <div class="note">{{ '+' if evolution.var_charges >= 0 else '' }}{{ '%.1f'|format(evolution.var_charges) }} % vs {{ annee - 1 }}</div>
+    {% endif %}
+  </div>
+  <div class="carte {{ 'vert' if exploitation.resultat_net >= 0 else 'rouge' }} accent">
+    <h4>Résultat net</h4>
+    <div class="valeur">{{ exploitation.resultat_net|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    <div class="note">Taux de marge : {{ '%.1f'|format(exploitation.taux_marge) }} %</div>
+  </div>
+  <div class="carte">
+    <h4>Trésorerie disponible</h4>
+    <div class="valeur">{{ tresorerie.total_disponible|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    <div class="note">Espèces + Mobile Money + Banque</div>
+  </div>
+  <div class="carte">
+    <h4>Créances à encaisser</h4>
+    <div class="valeur">{{ tresorerie.creances|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    <div class="note">Ventes à crédit non encaissées</div>
+  </div>
+</div>
+
+<h3>Détail de la trésorerie</h3>
+<div class="cartes">
+  <div class="carte"><h4>Espèces</h4><div class="valeur">{{ tresorerie.cash|montant }}</div></div>
+  <div class="carte"><h4>Mobile Money</h4><div class="valeur">{{ tresorerie.mobile_money|montant }}</div></div>
+  <div class="carte"><h4>Banque</h4><div class="valeur">{{ tresorerie.banque|montant }}</div></div>
+  <div class="carte"><h4>Total entrées</h4><div class="valeur">{{ tresorerie.entrees|montant }}</div></div>
+  <div class="carte"><h4>Total sorties</h4><div class="valeur">{{ tresorerie.sorties|montant }}</div></div>
+</div>
+
+{% if acces_analyse %}
+<h3>Analyse graphique</h3>
+<div class="grille-graphiques">
+  <div class="panneau graphique large">
+    <h4 class="titre-graphique">Évolution mensuelle — entrées, sorties et résultat</h4>
+    <div class="zone-canvas"><canvas id="g_evolution"></canvas></div>
+  </div>
+  <div class="panneau graphique">
+    <h4 class="titre-graphique">Trésorerie cumulée sur l'année</h4>
+    <div class="zone-canvas"><canvas id="g_cumul"></canvas></div>
+  </div>
+  <div class="panneau graphique">
+    <h4 class="titre-graphique">Structure des charges</h4>
+    <div class="zone-canvas"><canvas id="g_charges"></canvas></div>
+  </div>
+  <div class="panneau graphique">
+    <h4 class="titre-graphique">Répartition par mode de paiement</h4>
+    <div class="zone-canvas"><canvas id="g_modes"></canvas></div>
+  </div>
+  <div class="panneau graphique">
+    <h4 class="titre-graphique">Principaux clients</h4>
+    <div class="zone-canvas"><canvas id="g_clients"></canvas></div>
+  </div>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start;">
+  <div>
+    <h3>Évolution mensuelle {{ annee }}</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Mois</th><th class="num">Entrées</th><th class="num">Sorties</th><th class="num">Résultat</th></tr></thead>
+        <tbody>
+        {% set ns = namespace(tv=0, ta=0) %}
+        {% for cle, val in resume.items()|sort %}
+          {% set ns.tv = ns.tv + val.ventes %}{% set ns.ta = ns.ta + val.achats %}
+          <tr>
+            <td>{{ val.libelle }}</td>
+            <td class="num">{{ val.ventes|montant }}</td>
+            <td class="num">{{ val.achats|montant }}</td>
+            <td class="num" style="color:{{ 'var(--vert)' if val.resultat >= 0 else 'var(--rouge)' }};">{{ val.resultat|montant }}</td>
+          </tr>
+        {% endfor %}
+          <tr class="total">
+            <td>TOTAL</td>
+            <td class="num">{{ ns.tv|montant }}</td>
+            <td class="num">{{ ns.ta|montant }}</td>
+            <td class="num">{{ (ns.tv - ns.ta)|montant }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <h3>Structure des charges</h3>
+    {% if exploitation.detail_charges %}
+    <table>
+      <thead><tr><th>Poste</th><th class="num">Montant</th><th class="num">Part</th></tr></thead>
+      <tbody>
+      {% for c in exploitation.detail_charges[:8] %}
+        <tr>
+          <td>{{ c.categorie }}</td>
+          <td class="num">{{ c.total|montant }}</td>
+          <td class="num">{{ '%.1f'|format(c.total / exploitation.charges * 100 if exploitation.charges else 0) }} %</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="panneau vide">Aucune charge enregistrée.</div>
+    {% endif %}
+
+    <h3>Principaux clients</h3>
+    {% if meilleurs %}
+    <table>
+      <thead><tr><th>Client</th><th class="num">CA</th></tr></thead>
+      <tbody>
+      {% for c in meilleurs %}
+        <tr><td>{{ c.nom }}</td><td class="num">{{ c.total|montant }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="panneau vide">Aucune vente rattachée à un client.</div>
+    {% endif %}
+  </div>
+</div>
+
+<h3>Dernières opérations enregistrées</h3>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Date</th><th>Sens</th><th>Rubrique</th><th>Périmètre</th><th class="num">Montant</th><th>Saisi par</th></tr></thead>
+  <tbody>
+  {% for op in dernieres %}
+    <tr>
+      <td>{{ op.date_operation.strftime('%d/%m/%Y') }}</td>
+      <td><span class="etiquette {{ 'vert' if op.type_operation == 'vente' else ('rouge' if op.type_operation == 'achat' else '') }}">{{ LABELS_TYPE_COURT[op.type_operation] }}</span></td>
+      <td>{{ op.categorie|rubrique }}</td>
+      <td>{{ op.libelle_perimetre() }}</td>
+      <td class="num">{{ op.montant|montant }}</td>
+      <td>{{ op.cree_par.nom if op.cree_par else '—' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="vide">Aucune opération enregistrée pour le moment.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+  {% if acces_analyse %}
+  <form method="post" action="{{ url_for('export_sheets', annee=annee, **scope_args) }}">
+    <button class="btn vert" type="submit">Publier vers Google Sheets</button>
+  </form>
+  {% endif %}
+  {% if google_actif %}
+  <form method="post" action="{{ url_for('synchroniser_sheet', **scope_args) }}">
+    <button class="btn clair" type="submit">Resynchroniser le journal partagé</button>
+  </form>
+  {% endif %}
+</div>
+
+<p style="margin-top:22px;font-size:12.5px;color:var(--doux);">
+  Tous les chiffres et graphiques ci-dessus sont recalculés automatiquement à partir du
+  journal d'opérations. Aucune saisie manuelle des comptes n'est nécessaire.
+</p>
+
+{% if acces_analyse and graphiques %}
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script id="donnees-graphiques" type="application/json">{{ graphiques|tojson }}</script>
+<script src="{{ url_for('static', filename='js/graphiques.js') }}"></script>
+<script>
+  if (window.AKGraphiques) {
+    var d = JSON.parse(document.getElementById('donnees-graphiques').textContent);
+    AKGraphiques.evolution('g_evolution', d);
+    AKGraphiques.cumul('g_cumul', d);
+    AKGraphiques.beignet('g_charges', d.charges_labels, d.charges_valeurs, 'chaud');
+    AKGraphiques.beignet('g_modes', d.modes_labels, d.modes_valeurs, 'froid');
+    AKGraphiques.barresHorizontales('g_clients', d.clients_labels, d.clients_valeurs);
+  }
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block titre %}{{ titre }}{% endblock %}
+{% block contenu %}
+<h1>{{ titre }}</h1>
+<div class="zone-vide" style="margin-top:20px;">
+  <h3 style="margin-top:0;">Choisissez une entreprise</h3>
+  <p style="max-width:520px;margin:8px auto 0;line-height:1.6;">
+    Cet écran présente les données d'une entreprise à la fois.
+    Sélectionnez-la dans la barre en haut de page.
+  </p>
+  {% if not entreprises_menu %}
+  <p style="margin-top:16px;color:var(--rouge);">
+    Aucune entreprise ne vous est accessible.
+    {% if current_user.est_cabinet %}
+      <a href="{{ url_for('nouvelle_entreprise') }}">Créez-en une →</a>
+    {% else %}
+      Demandez au gérant de vous en assigner une.
+    {% endif %}
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

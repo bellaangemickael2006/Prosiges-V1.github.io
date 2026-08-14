@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block titre %}Mon profil{% endblock %}
+{% block contenu %}
+<h1>Mon profil</h1>
+<p class="sous-titre">Vos informations de compte et votre mot de passe</p>
+
+<div class="panneau" style="max-width:560px;">
+  <h3 style="margin-top:0;">Informations</h3>
+  <table>
+    <tr><th style="width:40%;">Nom</th><td>{{ current_user.nom }}</td></tr>
+    <tr><th>Email</th><td>{{ current_user.email }}</td></tr>
+    <tr><th>Rôle</th><td>{{ current_user.libelle_role() }}</td></tr>
+    {% if current_user.est_consultant %}
+    <tr><th>Entreprises suivies</th><td>
+      {% for e in current_user.entreprises_suivies %}{{ e.nom }}{% if not loop.last %}, {% endif %}{% else %}Aucune{% endfor %}
+    </td></tr>
+    {% endif %}
+    <tr><th>Dernière connexion</th><td>
+      {{ current_user.derniere_connexion.strftime('%d/%m/%Y à %H:%M') if current_user.derniere_connexion else 'Première connexion' }}
+    </td></tr>
+  </table>
+</div>
+
+<div class="panneau" style="max-width:560px;">
+  <h3 style="margin-top:0;">Changer mon mot de passe</h3>
+  <form method="post">
+    <div class="champ">
+      <label>Mot de passe actuel</label>
+      <input type="password" name="mot_de_passe_actuel" required autocomplete="current-password">
+    </div>
+    <div class="champ">
+      <label>Nouveau mot de passe</label>
+      <input type="password" name="nouveau_mot_de_passe" required minlength="8" autocomplete="new-password">
+      <div class="aide">8 caractères minimum.</div>
+    </div>
+    <div class="champ">
+      <label>Confirmer le nouveau mot de passe</label>
+      <input type="password" name="confirmation" required minlength="8" autocomplete="new-password">
+    </div>
+    <button class="btn" type="submit">Enregistrer</button>
+  </form>
+</div>
+{% endblock %}

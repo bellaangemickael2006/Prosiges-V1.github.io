@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% block titre %}Nouveau document — Ventes{% endblock %}
+{% block contenu %}
+
+<h1 id="titre-page">Nouvelle facture</h1>
+<p class="sous-titre">
+  {{ entreprise.nom }} — vos coordonnées sont reportées automatiquement sur le document.
+  {% if not profil.est_complet() %}
+    <a href="{{ url_for('profil_facturation', **scope_args) }}">Compléter mes informations de facturation →</a>
+  {% endif %}
+</p>
+
+<style>
+  .choix-type{flex:1;min-width:210px;display:flex;align-items:center;gap:9px;
+    padding:12px 14px;border:2px solid var(--bord);border-radius:9px;
+    cursor:pointer;font-weight:400;transition:border-color .13s,background .13s;}
+  .choix-type:hover{border-color:var(--bord-fort);background:var(--bleu-brume);}
+  .choix-type.actif{border-color:var(--bleu);background:var(--bleu-pale);}
+  .choix-type .detail{font-size:12px;color:var(--doux);}
+</style>
+
+<form method="post" id="form-doc">
+
+<div class="panneau">
+  <div class="champ">
+    <label>Type de document *</label>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <label class="choix-type" id="lbl-fac">
+        <input type="radio" name="type_document" value="facture" style="width:auto;" onchange="basculerType()"
+               {{ 'checked' if type_defaut == 'facture' }}>
+        <span><strong>Facture</strong><br><span class="detail">Constate la vente et le chiffre d'affaires</span></span>
+      </label>
+      <label class="choix-type" id="lbl-pro">
+        <input type="radio" name="type_document" value="proforma" style="width:auto;" onchange="basculerType()"
+               {{ 'checked' if type_defaut == 'proforma' }}>
+        <span><strong>Facture proforma</strong><br><span class="detail">Devis — n'engage rien</span></span>
+      </label>
+      <label class="choix-type" id="lbl-rec">
+        <input type="radio" name="type_document" value="recu" style="width:auto;" onchange="basculerType()"
+               {{ 'checked' if type_defaut == 'recu' }}>
+        <span><strong>Reçu de paiement</strong><br><span class="detail">Constate l'encaissement</span></span>
+      </label>
+    </div>
+    <div class="aide">
+      Une facture de 1 000 000 réglée à hauteur de 500 000 donne 1 000 000 de
+      chiffre d'affaires et 500 000 de trésorerie : les deux comptes ne se
+      confondent jamais.
+    </div>
+  </div>
+
+  <div class="grille2">
+    <div class="champ">
+      <label>N° de commande</label>
+      <input type="text" name="numero_commande" value="{{ numero_commande }}">
+      <div class="aide">Identifie l'affaire ; le n° de facture identifie la pièce.</div>
+    </div>
+    <div class="champ">
+      <label>Catégorie de la transaction</label>
+      <input type="text" name="categorie_transaction"
+             placeholder="Ex : COMMUNICATION ÉVÉNEMENTIELLE, INFOGRAPHIE…">
+      <div class="aide">Reprise en en-tête du document, en majuscules.</div>
+    </div>
+  </div>
+
+  <div class="grille2">
+    <div class="champ">
+      <label>Date du document *</label>
+      <input type="date" name="date_document" value="{{ aujourdhui }}" required>
+    </div>
+    <div class="champ" id="bloc_echeance">
+      <label>Date d'échéance</label>
+      <input type="date" name="date_echeance">
+      <div class="aide">Date limite de règlement de la proforma.</div>
+    </div>
+  </div>
+</div>
+
+<div class="panneau">
+  <h3 style="margin-top:0;">Client</h3>
+  <div class="champ">
+    <label>Nom du client</label>
+    <input type="text" name="client_nom" list="liste_clients" placeholder="Tapez les premières lettres">
+    <datalist id="liste_clients">
+      {% for c in clients %}<option value="{{ c.nom }}">{% endfor %}
+    </datalist>
+    <div class="aide">Si le client n'existe pas encore, il sera créé automatiquement.</div>
+  </div>
+  <div class="grille2">
+    <div class="champ">
+      <label>Téléphone (si nouveau client)</label>
+      <input type="text" name="client_contact" placeholder="Ex : 07 00 00 00 00">
+    </div>
+    <div class="champ">
+      <label>Localisation (si nouveau client)</label>
+      <input type="text" name="client_localisation" placeholder="Ex : Cocody, Abidjan">
+    </div>
+  </div>
+  <div class="champ">
+    <label>Adresse e-mail (si nouveau client)</label>
+    <input type="email" name="client_email" placeholder="client@exemple.com">
+    <div class="aide">Figure dans le bloc d'identification du document.</div>
+  </div>
+</div>
+
+<div class="panneau">
+  <h3 style="margin-top:0;">Articles</h3>
+  <p style="font-size:13px;color:var(--doux);margin-bottom:14px;">
+    Choisissez un article du catalogue — la désignation, le prix et l'unité se remplissent seuls.
+    Vous pouvez aussi saisir une ligne libre.
+  </p>
+
+  <div class="table-scroll">
+  <table class="lignes-doc" id="table-lignes">
+    <thead><tr>
+      <th style="width:30%;">Article du catalogue</th>
+      <th style="width:26%;">Désignation</th>
+      <th style="width:10%;">Quantité</th>
+      <th style="width:12%;">Unité</th>
+      <th style="width:13%;">Prix unitaire</th>
+      <th style="width:13%;" class="num">Total</th>
+      <th style="width:13%;" class="colonne-paye">Montant payé</th>
+      <th style="width:4%;"></th>
+    </tr></thead>
+    <tbody id="corps-lignes"></tbody>
+  </table>
+  </div>
+
+  <button type="button" class="btn clair petit" onclick="ajouterLigne()" style="margin-top:12px;">
+    + Ajouter une ligne
+  </button>
+
+  <div id="alerte-stock-live" class="alerte-stock" style="display:none;margin-top:16px;
+       background:#fdeceb;border-left-color:var(--rouge);"></div>
+
+  <div class="totaux" style="margin-top:22px;">
+    <div><span>Total {{ 'HT' if profil.regime_tva else '' }}</span><span id="total-ht">0 {{ DEVISE }}</span></div>
+    {% if profil.regime_tva %}
+    <div><span>TVA ({{ profil.taux_tva|round|int }} %)</span><span id="total-tva">0 {{ DEVISE }}</span></div>
+    {% endif %}
+    <div class="grand"><span>TOTAL</span><span id="total-ttc">0 {{ DEVISE }}</span></div>
+  </div>
+</div>
+
+<div class="panneau" id="bloc_reglement">
+  <h3 style="margin-top:0;">Règlement</h3>
+  <div class="champ">
+    <label>Conditions de vente *</label>
+    <div style="display:flex;gap:12px;max-width:560px;">
+      <label class="choix-type" id="lbl-cpt">
+        <input type="radio" name="condition_vente" value="comptant" style="width:auto;" checked onchange="basculerCondition()">
+        <span><strong>Au comptant</strong><br><span class="detail">Payé en totalité</span></span>
+      </label>
+      <label class="choix-type" id="lbl-cre">
+        <input type="radio" name="condition_vente" value="credit" style="width:auto;" onchange="basculerCondition()">
+        <span><strong>À crédit</strong><br><span class="detail">Paiement partiel ou différé</span></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="grille2">
+    <div class="champ" id="bloc_montant_paye" style="display:none;">
+      <label>Montant déjà payé ({{ DEVISE }})</label>
+      <input type="number" step="1" min="0" name="montant_paye" id="montant_paye" value="0">
+      <div class="aide">Le reste à payer sera calculé et affiché sur le reçu.</div>
+    </div>
+    <div class="champ">
+      <label>Mode de paiement</label>
+      <select name="mode_paiement">
+        {% for m, libelle in LABELS_MODE.items() %}<option value="{{ m }}">{{ libelle }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="champ">
+    <label>Référence du paiement</label>
+    <input type="text" name="reference_paiement" placeholder="N° de transaction Mobile Money, n° de chèque...">
+  </div>
+</div>
+
+<div class="panneau">
+  <div class="champ">
+    <label>Informations complémentaires</label>
+    <input type="text" name="note" placeholder="Ex : Garantie 1 an, livraison incluse...">
+    <div class="aide">Ce texte apparaîtra sur le document.</div>
+  </div>
+</div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px;">
+  <button class="btn vert" type="submit">Créer le document</button>
+  <a class="btn clair" href="{{ url_for('ventes', **scope_args) }}">Annuler</a>
+</div>
+
+</form>
+
+<script>
+var CATALOGUE = {{ catalogue_json|safe }};
+var TAUX_TVA = {{ profil.taux_tva if profil.regime_tva else 0 }};
+var UNITES = {{ UNITES|tojson }};
+var compteur = 0;
+
+function formater(v){
+  return Math.round(v || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function ajouterLigne(){
+  compteur++;
+  var options = '<option value="">— Ligne libre —</option>';
+  CATALOGUE.forEach(function(a){
+    var suffixe = (a.nature === 'produit') ? ' (stock : ' + a.stock + ')' : '';
+    options += '<option value="' + a.id + '">' + a.designation + suffixe + '</option>';
+  });
+  var optionsUnite = '';
+  UNITES.forEach(function(u){ optionsUnite += '<option value="' + u + '">' + u + '</option>'; });
+
+  var ligne = document.createElement('tr');
+  ligne.innerHTML =
+    '<td><select name="article_id" onchange="remplirDepuisCatalogue(this)">' + options + '</select></td>' +
+    '<td><input type="text" name="designation" placeholder="Désignation"></td>' +
+    '<td><input type="number" name="quantite" value="1" min="0" step="0.01" oninput="recalculer()"></td>' +
+    '<td><select name="unite">' + optionsUnite + '</select></td>' +
+    '<td><input type="number" name="prix_unitaire" value="0" min="0" step="1" oninput="recalculer()"></td>' +
+    '<td class="num" style="font-weight:600;padding-right:10px;"><span class="total-ligne">0</span></td>' +
+    '<td class="colonne-paye">' +
+      '<input type="number" name="ligne_montant_paye" min="0" step="1" placeholder="tout">' +
+      '<label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--doux);margin-top:4px;">' +
+        '<input type="checkbox" name="ligne_remise" value="' + (compteur - 1) + '" onchange="basculerRemise(this)"> Remise' +
+      '</label>' +
+    '</td>' +
+    '<td><button type="button" class="btn petit rouge" onclick="this.closest(\'tr\').remove();recalculer();">×</button></td>';
+  document.getElementById('corps-lignes').appendChild(ligne);
+  recalculer();
+}
+
+function remplirDepuisCatalogue(select){
+  var ligne = select.closest('tr');
+  var article = CATALOGUE.find(function(a){ return String(a.id) === select.value; });
+  if(article){
+    ligne.querySelector('input[name=designation]').value = article.designation;
+    ligne.querySelector('input[name=prix_unitaire]').value = article.prix;
+    var selectUnite = ligne.querySelector('select[name=unite]');
+    for(var i = 0; i < selectUnite.options.length; i++){
+      if(selectUnite.options[i].value === article.unite){ selectUnite.selectedIndex = i; break; }
+    }
+    ligne.dataset.stock = (article.nature === 'produit') ? article.stock : '';
+  } else {
+    ligne.dataset.stock = '';
+  }
+  recalculer();
+}
+
+/* Avertit si la quantité saisie dépasse le stock disponible.
+   On avertit sans bloquer : le stock réel diffère parfois de
+   l'enregistrement, et empêcher une vente déjà conclue n'aiderait pas. */
+function controlerStock(){
+  var alertes = [];
+  document.querySelectorAll('#corps-lignes tr').forEach(function(ligne){
+    var stock = ligne.dataset.stock;
+    var champQte = ligne.querySelector('input[name=quantite]');
+    if(stock === '' || stock === undefined){
+      champQte.style.borderColor = '';
+      return;
+    }
+    var demandee = parseFloat(champQte.value) || 0;
+    var dispo = parseFloat(stock);
+    if(demandee > dispo){
+      champQte.style.borderColor = '#c0392b';
+      var nom = ligne.querySelector('input[name=designation]').value;
+      alertes.push(nom + ' : ' + demandee + ' demandé(s) pour ' + dispo + ' en stock');
+    } else {
+      champQte.style.borderColor = '';
+    }
+  });
+
+  var zone = document.getElementById('alerte-stock-live');
+  if(alertes.length){
+    zone.style.display = 'block';
+    zone.innerHTML = '<strong>Stock insuffisant</strong><p style="margin-top:6px;font-size:13.5px;">'
+      + alertes.join('<br>') + '<br><em>Le document sera tout de même enregistré. '
+      + 'Pensez à régulariser votre stock ensuite.</em></p>';
+  } else {
+    zone.style.display = 'none';
+  }
+}
+
+function recalculer(){
+  var totalHT = 0;
+  document.querySelectorAll('#corps-lignes tr').forEach(function(ligne){
+    var q = parseFloat(ligne.querySelector('input[name=quantite]').value) || 0;
+    var p = parseFloat(ligne.querySelector('input[name=prix_unitaire]').value) || 0;
+    var total = q * p;
+    totalHT += total;
+    ligne.querySelector('.total-ligne').textContent = formater(total);
+  });
+  var tva = totalHT * TAUX_TVA / 100;
+  document.getElementById('total-ht').textContent = formater(totalHT) + ' {{ DEVISE }}';
+  var champTva = document.getElementById('total-tva');
+  if(champTva){ champTva.textContent = formater(tva) + ' {{ DEVISE }}'; }
+  document.getElementById('total-ttc').textContent = formater(totalHT + tva) + ' {{ DEVISE }}';
+
+  controlerStock();
+
+  var champPaye = document.getElementById('montant_paye');
+  if(champPaye && champPaye.dataset.auto !== 'non'){
+    var comptant = document.querySelector('input[name=condition_vente][value=comptant]').checked;
+    if(comptant){ champPaye.value = Math.round(totalHT + tva); }
+  }
+}
+
+var TITRES = {
+  facture: 'Nouvelle facture',
+  proforma: 'Nouvelle facture proforma',
+  recu: 'Nouveau reçu de paiement'
+};
+
+function typeChoisi(){
+  var coche = document.querySelector('input[name=type_document]:checked');
+  return coche ? coche.value : 'facture';
+}
+
+function basculerType(){
+  var type = typeChoisi();
+  var estRecu = (type === 'recu');
+  document.getElementById('titre-page').textContent = TITRES[type];
+
+  /* Le règlement ne concerne pas une proforma, qui n'engage rien.
+     Le détail du montant payé ligne à ligne est propre au reçu. */
+  document.getElementById('bloc_reglement').style.display =
+    (type === 'proforma') ? 'none' : 'block';
+  document.getElementById('bloc_echeance').style.display = estRecu ? 'none' : 'block';
+
+  document.querySelectorAll('.colonne-paye').forEach(function(cellule){
+    cellule.style.display = estRecu ? '' : 'none';
+  });
+
+  ['fac', 'pro', 'rec'].forEach(function(suffixe){
+    var etiquette = document.getElementById('lbl-' + suffixe);
+    if(!etiquette) return;
+    etiquette.classList.toggle('actif', etiquette.querySelector('input').checked);
+  });
+  recalculer();
+}
+
+/* Ligne offerte au client : montant payé forcé à zéro, comme sur le modèle
+   de reçu du cabinet où une prestation porte la mention (Remise). */
+function basculerRemise(caseACocher){
+  var ligne = caseACocher.closest('tr');
+  var champ = ligne.querySelector('input[name=ligne_montant_paye]');
+  if(!champ) return;
+  champ.disabled = caseACocher.checked;
+  if(caseACocher.checked){ champ.value = 0; }
+  recalculer();
+}
+
+function basculerCondition(){
+  var comptant = document.querySelector('input[name=condition_vente][value=comptant]').checked;
+  document.getElementById('bloc_montant_paye').style.display = comptant ? 'none' : 'block';
+  document.getElementById('lbl-cpt').classList.toggle('actif', comptant);
+  document.getElementById('lbl-cre').classList.toggle('actif', !comptant);
+  var champPaye = document.getElementById('montant_paye');
+  if(champPaye){ champPaye.dataset.auto = comptant ? 'oui' : 'non'; }
+  recalculer();
+}
+
+ajouterLigne();
+basculerType();
+basculerCondition();
+</script>
+{% endblock %}

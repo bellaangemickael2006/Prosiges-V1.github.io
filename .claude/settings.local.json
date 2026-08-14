@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -NoProfile -Command \"Get-Command msedge -ErrorAction SilentlyContinue; Get-Command chrome -ErrorAction SilentlyContinue; Test-Path 'C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'; Test-Path 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe'\")",
+      "Bash('/c/Program Files \\(x86\\)/Microsoft/Edge/Application/msedge.exe' --headless --disable-gpu --no-pdf-header-footer --print-to-pdf=C:/Users/Bella/AppData/Local/Temp/claude/C--Users-Bella-Downloads-posiges-v1-1-posiges-final/b444c790-ab67-4498-bdca-699bb5e84390/scratchpad/PROSIGES_V1_Plan_de_suivi.pdf file:///C:/Users/Bella/AppData/Local/Temp/claude/C--Users-Bella-Downloads-posiges-v1-1-posiges-final/b444c790-ab67-4498-bdca-699bb5e84390/scratchpad/plan_suivi_prosiges.html)",
+      "Bash(python3 -c ' *)",
+      "Bash(python test_app.py)",
+      "Bash(python -c \"import google_integration; print\\('ok'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(powershell -NoProfile -Command \"if \\(Test-Path 'C:\\\\Users\\\\Bella\\\\Downloads\\\\RAPPORT D''ETAT DES LIEUX NOA HAIR FINAL.doc'\\) { \\(Get-Item 'C:\\\\Users\\\\Bella\\\\Downloads\\\\RAPPORT D''ETAT DES LIEUX NOA HAIR FINAL.doc'\\).Length } else { 'ABSENT' }\")",
+      "Bash(powershell -NoProfile -Command \"Get-ChildItem 'C:\\\\Users\\\\Bella\\\\AppData\\\\Local\\\\Temp\\\\claude' -Recurse -Include *.png,*.jpg,*.jpeg -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 15 FullName,LastWriteTime,Length\")",
+      "Bash(powershell -NoProfile -Command \"Get-ChildItem 'C:\\\\Users\\\\Bella\\\\Downloads' -Include *.png,*.jpg,*.jpeg -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 8 FullName,LastWriteTime,Length\")",
+      "Bash(powershell -NoProfile -Command \"\\(Get-Item 'C:\\\\Users\\\\Bella\\\\Downloads\\\\logo ak.png'\\).Length\")",
+      "Bash(python -c \"import pypdf\")",
+      "Bash(python -c \"import PyPDF2\")",
+      "Bash(python -c \"import fitz\")",
+      "Bash(python -c \"import pdfplumber\")",
+      "Bash(pip install *)",
+      "Bash(powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'C:\\\\Users\\\\Bella\\\\Downloads\\\\posiges_v1_1\\\\posiges_final\\\\static\\\\img' | Out-Null; Copy-Item -Path 'C:\\\\Users\\\\Bella\\\\Downloads\\\\logo ak.png' -Destination 'C:\\\\Users\\\\Bella\\\\Downloads\\\\posiges_v1_1\\\\posiges_final\\\\static\\\\img\\\\logo_ak_world.png' -Force; Get-Item 'C:\\\\Users\\\\Bella\\\\Downloads\\\\posiges_v1_1\\\\posiges_final\\\\static\\\\img\\\\logo_ak_world.png' | Select-Object Length\")",
+      "Bash(python -c \"import comptes\")",
+      "Bash(python -c \"import documents_pdf\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('routes_commerciales.py',encoding='utf-8'\\).read\\(\\)\\); print\\('routes_commerciales OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('documents_pdf.py',encoding='utf-8'\\).read\\(\\)\\); print\\('documents_pdf OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('models.py',encoding='utf-8'\\).read\\(\\)\\); print\\('models OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('migrations.py',encoding='utf-8'\\).read\\(\\)\\); print\\('migrations OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('gestion_commerciale.py',encoding='utf-8'\\).read\\(\\)\\); print\\('gc OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('documents_pdf.py',encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(python -c \"import ast; [ast.parse\\(open\\(f,encoding='utf-8'\\).read\\(\\)\\) for f in \\('documents_pdf.py','migrations.py','models.py'\\)]; print\\('syntax OK'\\)\")",
+      "Bash(powershell -NoProfile -Command \"Get-ChildItem 'C:\\\\Users\\\\Bella\\\\Downloads\\\\posiges_v1_1\\\\posiges_final\\\\uploads\\\\logos' -ErrorAction SilentlyContinue | Select-Object Name,Length,LastWriteTime | Format-Table -AutoSize\")",
+      "Bash(powershell -NoProfile -Command \"Get-ChildItem 'C:\\\\Users\\\\Bella\\\\Downloads\\\\posiges_v1_1\\\\posiges_final\\\\static\\\\img' | Select-Object Name,Length,LastWriteTime | Format-Table -AutoSize\")",
+      "Bash(python3 -c \"import flask; print\\('flask ok'\\)\")",
+      "Bash(python3 -m pytest test_app.py -q)",
+      "Bash(python3 -m unittest test_app -v)",
+      "Bash(python3 -m pip list)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "21st"
+  ]
+}

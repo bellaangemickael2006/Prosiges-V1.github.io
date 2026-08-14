@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block titre %}{{ LABELS_BUDGET[type_budget] }} {{ annee }} — {{ entreprise.nom }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ LABELS_BUDGET[type_budget] }} — {{ annee }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ entreprise.nom }} — un montant prévisionnel par rubrique et par mois
+    </p>
+  </div>
+  <div class="actions">
+    <a class="btn clair" href="{{ url_for('budget_accueil', entreprise_id=entreprise.id, annee=annee) }}">Retour</a>
+    <form method="post" action="{{ url_for('budget', type_budget=type_budget, entreprise_id=entreprise.id, annee=annee) }}">
+      <input type="hidden" name="recopier" value="1">
+      <button class="btn clair" type="submit"
+              title="Reprend les montants de l'exercice précédent comme point de départ">
+        Reprendre {{ annee - 1 }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="encart bleu">
+  <strong>Laissez vide ce que vous ne prévoyez pas</strong>
+  Seules les cases remplies sont enregistrées. Les montants s'écrivent sans
+  espace ni symbole : <code>150000</code>. La colonne « Total » se met à jour
+  à mesure que vous saisissez.
+</div>
+
+<form method="post" id="form-budget"
+      action="{{ url_for('budget', type_budget=type_budget, entreprise_id=entreprise.id, annee=annee) }}">
+
+  {% if type_budget == 'tresorerie' %}
+  <div class="panneau" style="max-width:520px;">
+    <div class="champ" style="margin-bottom:0;">
+      <label for="solde_initial">Solde de trésorerie au 1<sup>er</sup> janvier {{ annee }} (C)</label>
+      <input type="number" step="1" id="solde_initial" name="solde_initial"
+             value="{{ budget.solde_initial|round|int if budget.solde_initial else '' }}"
+             placeholder="0">
+      <div class="aide">
+        L'argent déjà en caisse et en banque à l'ouverture de l'exercice.
+        C'est le point de départ du calcul des soldes mensuels.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="table-scroll">
+    <table class="budget">
+      <thead>
+        <tr>
+          <th class="libelle">Libellé</th>
+          {% for m in mois %}<th>{{ m.court }}</th>{% endfor %}
+          <th>Total {{ annee }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for section in sections %}
+          <tr class="section">
+            <td class="libelle" colspan="14">{{ section.titre }}</td>
+          </tr>
+          {% for code, libelle in section.rubriques %}
+            <tr data-rubrique="{{ code }}">
+              <td class="libelle">{{ libelle }}</td>
+              {% for m in mois %}
+                <td>
+                  <input type="number" step="1" placeholder="0"
+                         name="montant_{{ code }}_{{ m.numero }}"
+                         value="{{ montants[(code, m.numero)]|round|int if montants.get((code, m.numero)) else '' }}"
+                         aria-label="{{ libelle }} — {{ m.libelle }}">
+                </td>
+              {% endfor %}
+              <td class="total">0</td>
+            </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="actions" style="margin-top:20px;">
+    <button class="btn" type="submit">Enregistrer le budget</button>
+    <a class="btn clair"
+       href="{{ url_for('compte_exploitation' if type_budget == 'exploitation' else 'compte_tresorerie', entreprise_id=entreprise.id, annee=annee) }}">
+      Voir le compte correspondant
+    </a>
+  </div>
+</form>
+
+<script>
+  /* Total de chaque ligne, recalculé à la saisie : le gérant voit
+     immédiatement ce qu'il vient de budgéter sur l'année. */
+  (function () {
+    var formulaire = document.getElementById('form-budget');
+    if (!formulaire) return;
+
+    function formater(valeur) {
+      return Math.round(valeur).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function recalculer(ligne) {
+      var total = 0;
+      ligne.querySelectorAll('input[type=number]').forEach(function (champ) {
+        total += parseFloat(champ.value) || 0;
+      });
+      var cellule = ligne.querySelector('td.total');
+      if (cellule) cellule.textContent = formater(total);
+    }
+
+    formulaire.querySelectorAll('tr[data-rubrique]').forEach(recalculer);
+    formulaire.addEventListener('input', function (evenement) {
+      var ligne = evenement.target.closest('tr[data-rubrique]');
+      if (ligne) recalculer(ligne);
+    });
+  })();
+</script>
+
+{% endblock %}

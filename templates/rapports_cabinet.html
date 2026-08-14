@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block titre %}Rapports d'accompagnement{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ 'Mes rapports' if current_user.est_client else "Rapports d'accompagnement" }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {% if entreprise %}{{ entreprise.nom }}{% else %}Toutes les entreprises suivies{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if current_user.est_client %}
+<div class="panneau" style="background:#eaf1f7;border-left:4px solid var(--bleu);">
+  <strong>Les rapports de votre consultant</strong>
+  <p style="margin-top:6px;font-size:14px;line-height:1.55;">
+    Votre consultant {{ NOM_CABINET }} analyse régulièrement votre activité et dépose
+    ici ses rapports. Vous pouvez les consulter et les télécharger à tout moment.
+  </p>
+</div>
+{% endif %}
+
+{% if peut_rediger and entreprise %}
+<div class="panneau" style="max-width:640px;">
+  <h3 style="margin-top:0;">Rédiger un nouveau rapport</h3>
+  <p style="font-size:13.5px;color:var(--doux);margin-bottom:14px;">
+    Le rapport sera pré-rempli avec les chiffres de la période : synthèse financière
+    et constats sont rédigés automatiquement. Vous n'aurez qu'à compléter votre
+    analyse et vos recommandations.
+  </p>
+  <form method="post" action="{{ url_for('nouveau_rapport', **scope_args) }}">
+    <div class="grille2">
+      <div class="champ">
+        <label>Exercice</label>
+        <select name="annee">
+          {% for a in range(annee_defaut, annee_defaut - 4, -1) %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="champ">
+        <label>Période</label>
+        <input type="text" name="periode" placeholder="Ex : 1er semestre {{ annee_defaut }}">
+      </div>
+    </div>
+    <div class="champ">
+      <label>Titre du rapport</label>
+      <input type="text" name="titre" placeholder="Laisser vide pour un titre automatique">
+    </div>
+    <button class="btn vert" type="submit">Créer le rapport</button>
+  </form>
+</div>
+{% elif peut_rediger and not entreprise %}
+<div class="zone-vide">
+  <p>Choisissez une entreprise dans le menu pour rédiger un rapport.</p>
+</div>
+{% endif %}
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Titre</th><th>Période</th>{% if not current_user.est_client %}<th>Entreprise</th>{% endif %}
+    <th>Rédigé par</th><th>Créé le</th><th>Statut</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for r in rapports %}
+    <tr>
+      <td><a href="{{ url_for('modifier_rapport', rapport_id=r.id) }}"><strong>{{ r.titre }}</strong></a></td>
+      <td>{{ r.periode or '—' }}</td>
+      {% if not current_user.est_client %}<td>{{ r.entreprise.nom }}</td>{% endif %}
+      <td>{{ r.cree_par.nom if r.cree_par else '—' }}</td>
+      <td>{{ r.date_creation.strftime('%d/%m/%Y') }}</td>
+      <td>
+        {% if r.publie %}<span class="etiquette vert">Publié</span>
+        {% else %}<span class="etiquette or">Brouillon</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap;">
+        <a class="btn petit clair" href="{{ url_for('modifier_rapport', rapport_id=r.id) }}">{{ 'Modifier' if peut_rediger else 'Lire' }}</a>
+        <a class="btn petit clair" href="{{ url_for('telecharger_rapport', rapport_id=r.id) }}">PDF</a>
+        {% if peut_rediger %}
+        <form class="inline" method="post" action="{{ url_for('supprimer_rapport', rapport_id=r.id) }}"
+              onsubmit="return confirm('Supprimer ce rapport ?');">
+          <button class="btn petit rouge" type="submit">Suppr.</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="{{ 6 if current_user.est_client else 7 }}" class="vide">
+      {% if current_user.est_client %}Aucun rapport n'a encore été publié par votre consultant.
+      {% else %}Aucun rapport rédigé.{% endif %}
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

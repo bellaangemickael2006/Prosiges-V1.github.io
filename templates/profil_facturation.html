@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block titre %}Informations de facturation{% endblock %}
+{% block contenu %}
+
+<h1>Informations de facturation</h1>
+<p class="sous-titre">{{ entreprise.nom }}</p>
+
+<div class="encart bleu" style="max-width:760px;">
+  <strong>À renseigner une seule fois</strong>
+  <p style="margin-top:6px;font-size:14px;line-height:1.55;">
+    Ces informations apparaîtront automatiquement en tête de toutes vos factures
+    et de tous vos reçus, logo compris. Vous n'aurez plus jamais à les ressaisir.
+  </p>
+</div>
+
+<div class="panneau" style="max-width:760px;">
+<form method="post" enctype="multipart/form-data">
+  <h3 style="margin-top:0;">Identité de l'entreprise</h3>
+  <div class="champ">
+    <label>Raison sociale *</label>
+    <input type="text" name="raison_sociale" required value="{{ profil.raison_sociale or '' }}"
+           {{ 'disabled' if not peut_modifier }}>
+  </div>
+  <div class="grille2">
+    <div class="champ">
+      <label>Adresse</label>
+      <input type="text" name="adresse" value="{{ profil.adresse or '' }}" placeholder="Ex : Rue des Jardins, Cocody"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+    <div class="champ">
+      <label>Ville</label>
+      <input type="text" name="ville" value="{{ profil.ville or '' }}" placeholder="Ex : Abidjan"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+  </div>
+  <div class="grille2">
+    <div class="champ">
+      <label>Téléphone</label>
+      <input type="text" name="telephone" value="{{ profil.telephone or '' }}"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+    <div class="champ">
+      <label>Email</label>
+      <input type="email" name="email" value="{{ profil.email or '' }}"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+  </div>
+  <div class="champ">
+    <label>Site web</label>
+    <input type="text" name="site_web" value="{{ profil.site_web or '' }}"
+           {{ 'disabled' if not peut_modifier }}>
+  </div>
+
+  <h3>Logo et signature</h3>
+  <p style="font-size:13px;color:var(--doux);margin-bottom:14px;">
+    Le logo se place en haut à gauche de chaque facture et de chaque reçu ;
+    la signature ou le cachet apparaît sous la mention « LA DIRECTION ».
+  </p>
+  <div class="grille2">
+    <div>
+      <div class="apercu-image">
+        {% if profil.logo %}
+          <img src="{{ url_for('image_hebergee', chemin=profil.logo.split('/')[-1]) }}" alt="Logo">
+        {% else %}
+          <span class="sans">Aucun logo chargé</span>
+        {% endif %}
+      </div>
+      <div class="champ">
+        <label>Logo de l'entreprise</label>
+        <input type="file" name="logo" accept=".png,.jpg,.jpeg,.gif"
+               {{ 'disabled' if not peut_modifier }}>
+        <div class="aide">PNG ou JPG, de préférence sur fond transparent.</div>
+      </div>
+      {% if profil.logo and peut_modifier %}
+      <div class="champ case">
+        <input type="checkbox" id="retirer_logo" name="retirer_logo" value="1">
+        <label for="retirer_logo">Retirer le logo actuel</label>
+      </div>
+      {% endif %}
+    </div>
+    <div>
+      <div class="apercu-image">
+        {% if profil.signature %}
+          <img src="{{ url_for('image_hebergee', chemin=profil.signature.split('/')[-1]) }}" alt="Signature">
+        {% else %}
+          <span class="sans">Aucune signature chargée</span>
+        {% endif %}
+      </div>
+      <div class="champ">
+        <label>Signature ou cachet</label>
+        <input type="file" name="signature" accept=".png,.jpg,.jpeg,.gif"
+               {{ 'disabled' if not peut_modifier }}>
+      </div>
+      <div class="champ">
+        <label>Nom du signataire</label>
+        <input type="text" name="signataire" value="{{ profil.signataire or '' }}"
+               placeholder="Prénom NOM" {{ 'disabled' if not peut_modifier }}>
+      </div>
+      {% if profil.signature and peut_modifier %}
+      <div class="champ case">
+        <input type="checkbox" id="retirer_signature" name="retirer_signature" value="1">
+        <label for="retirer_signature">Retirer la signature actuelle</label>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <h3>Identifiants légaux</h3>
+  <p style="font-size:13px;color:var(--doux);margin-bottom:12px;">
+    Facultatifs. Ils n'apparaissent sur les documents que s'ils sont renseignés.
+  </p>
+  <div class="grille2">
+    <div class="champ">
+      <label>N° RCCM</label>
+      <input type="text" name="rccm" value="{{ profil.rccm or '' }}"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+    <div class="champ">
+      <label>Compte contribuable</label>
+      <input type="text" name="compte_contribuable" value="{{ profil.compte_contribuable or '' }}"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+  </div>
+
+  <h3>TVA</h3>
+  <div class="champ">
+    <label><input type="checkbox" name="regime_tva" style="width:auto;" {{ 'checked' if profil.regime_tva }}
+                  {{ 'disabled' if not peut_modifier }}>
+      Mon entreprise est assujettie à la TVA</label>
+    <div class="aide">Si cette case n'est pas cochée, les documents affichent un montant unique, sans TVA.</div>
+  </div>
+  <div class="champ" style="max-width:220px;">
+    <label>Taux de TVA (%)</label>
+    <input type="number" step="0.1" min="0" max="100" name="taux_tva" value="{{ profil.taux_tva or 18 }}"
+           {{ 'disabled' if not peut_modifier }}>
+  </div>
+
+  <h3>Coordonnées de règlement</h3>
+  <p style="font-size:13px;color:var(--doux);margin-bottom:12px;">
+    Imprimées en pied de document, pour indiquer à vos clients comment vous payer.
+  </p>
+  <div class="grille2">
+    <div class="champ">
+      <label>Banque</label>
+      <input type="text" name="banque" value="{{ profil.banque or '' }}"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+    <div class="champ">
+      <label>Numéro de compte / IBAN</label>
+      <input type="text" name="numero_compte" value="{{ profil.numero_compte or '' }}"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+  </div>
+  <div class="grille2">
+    <div class="champ">
+      <label>Client bénéficiaire du compte</label>
+      <input type="text" name="beneficiaire" value="{{ profil.beneficiaire or '' }}"
+             placeholder="Nom figurant sur le compte bancaire"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+    <div class="champ">
+      <label>Mobile Money</label>
+      <input type="text" name="mobile_money" value="{{ profil.mobile_money or '' }}"
+             placeholder="Ex : Orange Money 07 00 00 00 00"
+             {{ 'disabled' if not peut_modifier }}>
+    </div>
+  </div>
+  <div class="champ">
+    <label>Bandeau légal de bas de page</label>
+    <input type="text" name="pied_legal" value="{{ profil.pied_legal or '' }}"
+           placeholder="{{ profil.ligne_pied_legal() }}"
+           {{ 'disabled' if not peut_modifier }}>
+    <div class="aide">
+      Ligne centrée en bas de chaque document. Laissez vide pour qu'elle soit
+      composée automatiquement à partir des champs ci-dessus.
+    </div>
+  </div>
+  <div class="champ">
+    <label>Mention de bas de page</label>
+    <input type="text" name="mention_pied" value="{{ profil.mention_pied or '' }}"
+           placeholder="Merci de votre confiance."
+           {{ 'disabled' if not peut_modifier }}>
+  </div>
+
+  {% if peut_modifier %}
+  <button class="btn" type="submit" style="margin-top:12px;">Enregistrer</button>
+  {% endif %}
+</form>
+</div>
+{% endblock %}

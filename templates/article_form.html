@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block titre %}{{ 'Modifier' if article else 'Nouveau' }} — Produits et services{% endblock %}
+{% block contenu %}
+
+<h1>{{ 'Modifier un article' if article else 'Nouveau produit ou service' }}</h1>
+<p class="sous-titre">{{ entreprise.nom }}</p>
+
+<div class="panneau" style="max-width:660px;">
+<form method="post">
+
+  <div class="champ">
+    <label>Nature *</label>
+    <div style="display:flex;gap:12px;">
+      <label style="flex:1;display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid var(--bord);border-radius:8px;cursor:pointer;font-weight:400;"
+             id="lbl-produit">
+        <input type="radio" name="nature" value="produit" style="width:auto;" onchange="basculerNature()"
+               {{ 'checked' if not article or article.nature=='produit' }}>
+        <span><strong>Produit</strong><br><span style="font-size:12px;color:var(--doux);">Stock suivi</span></span>
+      </label>
+      <label style="flex:1;display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid var(--bord);border-radius:8px;cursor:pointer;font-weight:400;"
+             id="lbl-service">
+        <input type="radio" name="nature" value="service" style="width:auto;" onchange="basculerNature()"
+               {{ 'checked' if article and article.nature=='service' }}>
+        <span><strong>Service</strong><br><span style="font-size:12px;color:var(--doux);">Pas de stock</span></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="grille2">
+    <div class="champ">
+      <label>Désignation *</label>
+      <input type="text" name="designation" required
+             value="{{ article.designation if article else '' }}"
+             placeholder="Ex : Jus d'orange 1L">
+    </div>
+    <div class="champ">
+      <label>Référence</label>
+      <input type="text" name="reference" value="{{ article.reference if article else '' }}"
+             placeholder="Ex : JUS-001">
+    </div>
+  </div>
+
+  <div class="champ">
+    <label>Famille de produits</label>
+    <select name="famille_id">
+      <option value="">— Aucune famille (chiffre d'affaires non ventilé) —</option>
+      {% for f in familles %}
+        <option value="{{ f.id }}" {{ 'selected' if article and article.famille_id == f.id }}>{{ f.nom }}</option>
+      {% endfor %}
+    </select>
+    <div class="aide">
+      C'est la famille qui détermine la ligne de chiffre d'affaires du compte
+      d'exploitation alimentée par les ventes de cet article.
+      <a href="{{ url_for('familles', **scope_args) }}">Gérer les familles</a>
+    </div>
+  </div>
+
+  <div class="grille2">
+    <div class="champ">
+      <label>Étiquette (recherche)</label>
+      <input type="text" name="categorie" list="liste_categories"
+             value="{{ article.categorie if article else '' }}">
+      <datalist id="liste_categories">
+        {% for c in CATEGORIES_ARTICLES %}<option value="{{ c }}">{% endfor %}
+      </datalist>
+      <div class="aide">
+        Mot-clé libre pour retrouver l'article dans les recherches — sans effet
+        sur la comptabilité. À ne pas confondre avec la famille de produits
+        ci-dessus, qui seule alimente le compte d'exploitation.
+      </div>
+    </div>
+    <div class="champ">
+      <label>Unité</label>
+      <select name="unite">
+        {% for u in UNITES %}
+          <option value="{{ u }}" {{ 'selected' if article and article.unite==u }}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="champ">
+    <label>Description</label>
+    <input type="text" name="description" value="{{ article.description if article else '' }}"
+           placeholder="Précision facultative affichée sur la fiche">
+  </div>
+
+  <div class="grille2">
+    <div class="champ">
+      <label>Prix de vente ({{ DEVISE }}) *</label>
+      <input type="number" step="1" min="0" name="prix_vente" required
+             value="{{ article.prix_vente|round|int if article else '' }}" placeholder="0">
+      <div class="aide">Reporté automatiquement sur vos factures.</div>
+    </div>
+    <div class="champ">
+      <label>Prix d'achat ({{ DEVISE }})</label>
+      <input type="number" step="1" min="0" name="prix_achat"
+             value="{{ article.prix_achat|round|int if article else '' }}" placeholder="0">
+      <div class="aide">Sert au calcul de la valeur du stock.</div>
+    </div>
+  </div>
+
+  <div id="bloc_stock">
+    <h3 style="margin-top:22px;">Stock</h3>
+    <div class="grille2">
+      {% if not article %}
+      <div class="champ">
+        <label>Quantité en stock</label>
+        <input type="number" step="1" min="0" name="quantite_stock" value="0">
+        <div class="aide">Quantité dont vous disposez aujourd'hui.</div>
+      </div>
+      {% else %}
+      <div class="champ">
+        <label>Quantité actuelle</label>
+        <input type="text" value="{{ article.quantite_stock|round|int }} {{ article.unite }}" disabled
+               style="background:#f0f2f5;">
+        <div class="aide">Modifiable depuis l'onglet <a href="{{ url_for('stock', **scope_args) }}">Stock</a>.</div>
+      </div>
+      {% endif %}
+      <div class="champ">
+        <label>Seuil d'alerte</label>
+        <input type="number" step="1" min="0" name="seuil_alerte"
+               value="{{ article.seuil_alerte|round|int if article else 0 }}">
+        <div class="aide">Vous serez alerté quand le stock descend à ce niveau.</div>
+      </div>
+    </div>
+  </div>
+
+  {% if article %}
+  <div class="champ" style="margin-top:16px;">
+    <label><input type="checkbox" name="actif" style="width:auto;" {{ 'checked' if article.actif }}>
+      Article actif (visible lors de la création d'une facture)</label>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+    <button class="btn" type="submit">{{ 'Enregistrer' if article else 'Ajouter au catalogue' }}</button>
+    {% if not article %}
+      <button class="btn vert" type="submit" name="continuer" value="1">Ajouter et en saisir un autre</button>
+    {% endif %}
+    <a class="btn clair" href="{{ url_for('catalogue', **scope_args) }}">Annuler</a>
+  </div>
+</form>
+</div>
+
+<script>
+function basculerNature(){
+  var estProduit = document.querySelector('input[name=nature][value=produit]').checked;
+  document.getElementById('bloc_stock').style.display = estProduit ? 'block' : 'none';
+  document.getElementById('lbl-produit').style.borderColor = estProduit ? '#1c3d5a' : '#dfe3e8';
+  document.getElementById('lbl-service').style.borderColor = estProduit ? '#dfe3e8' : '#1c3d5a';
+}
+basculerNature();
+</script>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block titre %}Journal de bord{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ 'Mes saisies' if current_user.est_standard else 'Journal de bord' }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ lignes|length }} opération(s) —
+      entrées, sorties et solde cumulé
+    </p>
+  </div>
+  <a class="btn vert" href="{{ url_for('nouvelle_operation') }}">+ Nouvelle opération</a>
+</div>
+
+<div class="cartes">
+  <div class="carte vert accent">
+    <h4>Total entrées</h4>
+    <div class="valeur">{{ total_entrees|montant }} <span class="unite">{{ DEVISE }}</span></div>
+  </div>
+  <div class="carte rouge accent">
+    <h4>Total sorties</h4>
+    <div class="valeur">{{ total_sorties|montant }} <span class="unite">{{ DEVISE }}</span></div>
+  </div>
+  <div class="carte accent">
+    <h4>Solde final</h4>
+    <div class="valeur">{{ solde_final|montant }} <span class="unite">{{ DEVISE }}</span></div>
+    <div class="note">Entrées − sorties, cumulées</div>
+  </div>
+</div>
+
+{% if solde_final < 0 %}
+<div class="encart">
+  <strong>Le solde du journal est négatif</strong>
+  Il y a plus de sorties que d'entrées enregistrées. Vérifiez qu'aucune
+  entrée n'a été oubliée, ou qu'un montant n'a pas été saisi deux fois.
+</div>
+{% endif %}
+
+<form method="get" class="filtres">
+  <div class="champ">
+    <label>Recherche</label>
+    <input type="text" name="q" value="{{ recherche }}"
+           placeholder="Libellé, référence, n° de facture…">
+  </div>
+  <div class="champ">
+    <label>Sens</label>
+    <select name="type">
+      <option value="">Entrées et sorties</option>
+      {% for t in TYPES_OPERATION %}
+        <option value="{{ t }}" {{ 'selected' if t == filtre_type }}>{{ LABELS_TYPE[t] }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if not current_user.est_client %}
+  <div class="champ">
+    <label>Entreprise suivie</label>
+    <select name="entreprise_id">
+      <option value="">Toutes</option>
+      {% for e in entreprises %}
+        <option value="{{ e.id }}" {{ 'selected' if e.id == filtre_entreprise }}>{{ e.nom }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  {% if current_user.est_cabinet %}
+  <div class="champ">
+    <label>Département interne</label>
+    <select name="departement">
+      <option value="">Tous</option>
+      {% for d in DEPARTEMENTS %}
+        <option value="{{ d }}" {{ 'selected' if d == filtre_departement }}>{{ LABELS_DEPT[d] }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <button class="btn" type="submit">Filtrer</button>
+  <a class="btn clair" href="{{ url_for('journal') }}">Réinitialiser</a>
+</form>
+
+<div class="table-scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Libellé</th>
+      <th>Catégorie</th>
+      <th class="num">Entrée</th>
+      <th class="num">Sortie</th>
+      <th>Mode de paiement</th>
+      <th class="num">Solde</th>
+      <th>Pièce justificative</th>
+      {% if not current_user.est_client %}<th>Périmètre</th>{% endif %}
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for l in lignes %}
+    {% set op = l.operation %}
+    <tr>
+      <td style="white-space:nowrap;">{{ op.date_operation.strftime('%d/%m/%Y') }}</td>
+      <td>
+        {{ op.libelle or '—' }}
+        {% if op.client %}<br><span class="discret">{{ op.client.nom }}</span>{% endif %}
+      </td>
+      <td><span class="etiquette gris">{{ l.categorie }}</span></td>
+      <td class="num positif">{{ l.entree|montant if l.entree else '' }}</td>
+      <td class="num negatif">{{ l.sortie|montant if l.sortie else '' }}</td>
+      <td>{{ LABELS_MODE.get(op.mode_paiement, op.mode_paiement) }}</td>
+      <td class="num" style="font-weight:700;color:{{ 'var(--rouge)' if l.solde < 0 else 'var(--bleu)' }};">
+        {{ l.solde|montant }}
+      </td>
+      <td style="font-size:12.5px;">
+        {% if op.fichier_url %}
+          <a href="{{ op.fichier_url }}" target="_blank" rel="noopener">
+            {{ op.reference or op.numero_facture or 'Pièce' }}</a>
+        {% else %}
+          {{ op.reference or op.numero_facture or '—' }}
+          {% if op.fichier_local %}<span class="etiquette or">jointe</span>{% endif %}
+        {% endif %}
+      </td>
+      {% if not current_user.est_client %}<td>{{ op.libelle_perimetre() }}</td>{% endif %}
+      <td style="white-space:nowrap;">
+        {% if current_user.peut_modifier_operation(op) %}
+          <a class="btn petit clair" href="{{ url_for('modifier_operation', op_id=op.id) }}">Modifier</a>
+        {% endif %}
+        {% if current_user.peut_supprimer_operation(op) %}
+          <form class="inline" method="post" action="{{ url_for('supprimer_operation', op_id=op.id) }}"
+                onsubmit="return confirm('Supprimer définitivement cette opération ?\n\nL\'action sera enregistrée dans l\'historique.');">
+            <button class="btn petit rouge" type="submit">×</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="10" class="vide">Aucune opération ne correspond à ces critères.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p style="margin-top:14px;font-size:12.5px;color:var(--doux);line-height:1.6;">
+  Le solde est cumulatif et se lit du bas vers le haut : chaque ligne montre
+  la position de caisse après l'opération. C'est ce qui permet de repérer
+  immédiatement une erreur de saisie.
+  {% if lignes|length == 500 %}
+    Affichage limité aux 500 opérations les plus récentes ; l'export Excel
+    contient l'intégralité du journal.
+  {% endif %}
+</p>
+{% endblock %}

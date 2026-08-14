@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block titre %}Historique des actions{% endblock %}
+{% block contenu %}
+<h1>Historique des actions</h1>
+<p class="sous-titre">Traçabilité complète : qui a créé, modifié, supprimé ou exporté quoi, et quand.</p>
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Date et heure</th><th>Utilisateur</th><th>Action</th><th>Objet</th><th>Détails</th></tr></thead>
+  <tbody>
+  {% for e in entrees.items %}
+    <tr>
+      <td style="white-space:nowrap;">{{ e.date_action.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ e.utilisateur.nom if e.utilisateur else 'Système' }}</td>
+      <td>
+        <span class="etiquette {{ 'vert' if e.action == 'creation' else ('rouge' if e.action == 'suppression' else 'or') }}">{{ e.action }}</span>
+      </td>
+      <td>{{ e.objet_type }}{% if e.objet_id %} #{{ e.objet_id }}{% endif %}</td>
+      <td style="font-size:12.5px;">{{ e.details or '—' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="vide">Aucune action enregistrée.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if entrees.pages > 1 %}
+<div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
+  {% if entrees.has_prev %}<a class="btn petit clair" href="{{ url_for('historique', page=entrees.prev_num) }}">← Précédent</a>{% endif %}
+  <span style="font-size:13px;color:var(--doux);">Page {{ entrees.page }} sur {{ entrees.pages }}</span>
+  {% if entrees.has_next %}<a class="btn petit clair" href="{{ url_for('historique', page=entrees.next_num) }}">Suivant →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

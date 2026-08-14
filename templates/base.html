@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo_ak_world.png') }}">
+<title>{% block titre %}{{ NOM_CABINET }}{% endblock %}</title>
+<style>
+  /* ==================================================================
+     Posiges V1 — feuille de style
+     Une seule teinte dominante, un bleu profond, déclinée du fond au
+     texte. Les couleurs vives sont réservées au sens : vert pour ce qui
+     entre, rouge pour ce qui sort, or pour ce qui alerte.
+     ================================================================== */
+  :root{
+    --bleu:#173a5e; --bleu-fonce:#0f2942; --bleu-clair:#2b6098;
+    --bleu-pale:#eaf0f7; --bleu-brume:#f5f8fb;
+    --vert:#217a4b; --vert-pale:#e7f4ec;
+    --rouge:#b3352a; --rouge-pale:#fbeceb;
+    --or:#b47f1c; --or-pale:#fdf4e3;
+    --gris:#f2f5f8; --bord:#dde4ec; --bord-fort:#c3cfdc;
+    --texte:#1e2c3a; --doux:#67788b; --tres-doux:#93a2b3;
+    --ombre:0 1px 2px rgba(23,58,94,.05), 0 4px 14px rgba(23,58,94,.06);
+    --ombre-forte:0 2px 6px rgba(23,58,94,.10), 0 12px 32px rgba(23,58,94,.10);
+    --rayon:10px; --rayon-petit:7px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:var(--gris);color:var(--texte);font-size:15px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--bleu-clair);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  a:focus-visible,button:focus-visible,.btn:focus-visible,
+  input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:2px solid var(--bleu-clair);outline-offset:2px;}
+
+  /* ---------- En-tête ---------- */
+  header{
+    background:linear-gradient(180deg,var(--bleu) 0%,var(--bleu-fonce) 100%);
+    color:#fff;padding:0 26px;display:flex;justify-content:space-between;
+    align-items:center;flex-wrap:wrap;gap:12px;min-height:62px;
+  }
+  header .marque{display:flex;align-items:center;gap:12px;font-weight:700;
+    font-size:17px;letter-spacing:.2px;}
+  header .marque img{height:34px;width:auto;display:block;
+    background:#fff;border-radius:5px;padding:3px 5px;}
+  header .marque .nom{display:flex;flex-direction:column;line-height:1.25;}
+  header .marque .nom small{font-weight:400;opacity:.7;font-size:11.5px;
+    letter-spacing:.3px;text-transform:uppercase;}
+  header .compte{font-size:13px;display:flex;align-items:center;gap:14px;
+    flex-wrap:wrap;}
+  header .compte .qui{display:flex;flex-direction:column;line-height:1.3;
+    text-align:right;}
+  header .compte .qui b{font-weight:600;}
+  header .compte .qui span{opacity:.7;font-size:11.5px;}
+  header .compte a{color:#fff;opacity:.85;padding:5px 10px;border-radius:6px;
+    border:1px solid rgba(255,255,255,.22);}
+  header .compte a:hover{opacity:1;background:rgba(255,255,255,.1);
+    text-decoration:none;}
+
+  /* ---------- Barre de contexte : entreprise et exercice ---------- */
+  .barre-entreprise{
+    background:#fff;border-bottom:1px solid var(--bord);padding:9px 26px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  .barre-entreprise label{font-size:12px;color:var(--doux);font-weight:600;
+    text-transform:uppercase;letter-spacing:.5px;}
+  .barre-entreprise select{padding:6px 10px;border:1px solid var(--bord-fort);
+    border-radius:var(--rayon-petit);font-size:13.5px;font-family:inherit;
+    background:#fff;min-width:210px;color:var(--texte);}
+  .barre-entreprise form{display:flex;align-items:center;gap:9px;margin:0;}
+  .lien-discret{font-size:12.5px;color:var(--bleu-clair);}
+
+  /* ---------- Onglets ---------- */
+  nav.onglets{
+    background:#fff;border-bottom:1px solid var(--bord);padding:0 18px;
+    display:flex;gap:1px;overflow-x:auto;scrollbar-width:thin;
+    box-shadow:0 1px 3px rgba(23,58,94,.04);
+  }
+  nav.onglets a{
+    padding:12px 15px;color:var(--doux);font-size:13.5px;white-space:nowrap;
+    border-bottom:3px solid transparent;font-weight:500;
+  }
+  nav.onglets a:hover{color:var(--bleu);background:var(--bleu-brume);
+    text-decoration:none;}
+  nav.onglets a.actif{color:var(--bleu);border-bottom-color:var(--bleu);
+    font-weight:700;}
+  nav.onglets .separateur{width:1px;background:var(--bord);margin:9px 8px;
+    flex:none;}
+
+  main{padding:26px;max-width:1320px;margin:0 auto;}
+
+  /* ---------- Titres ---------- */
+  h1{font-size:23px;margin-bottom:3px;color:var(--bleu);letter-spacing:-.2px;}
+  h2{font-size:19px;margin-bottom:14px;color:var(--bleu);}
+  h3{font-size:14.5px;margin:26px 0 11px;color:var(--bleu);
+     text-transform:uppercase;letter-spacing:.6px;font-weight:700;}
+  h3:first-child{margin-top:0;}
+  .sous-titre{color:var(--doux);font-size:13px;margin-bottom:20px;}
+  .barre{display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:14px;margin-bottom:20px;}
+  .barre h1+.sous-titre{margin-bottom:0;}
+
+  /* ---------- Cartes d'indicateurs ---------- */
+  .cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(186px,1fr));
+    gap:14px;margin-bottom:24px;}
+  .carte{background:#fff;border:1px solid var(--bord);border-radius:var(--rayon);
+    padding:15px 17px;box-shadow:var(--ombre);transition:box-shadow .15s;}
+  .carte:hover{box-shadow:var(--ombre-forte);}
+  .carte h4{font-size:11px;color:var(--doux);text-transform:uppercase;
+    letter-spacing:.7px;font-weight:700;margin-bottom:7px;}
+  .carte .valeur{font-size:22px;font-weight:700;color:var(--bleu);
+    line-height:1.15;font-variant-numeric:tabular-nums;letter-spacing:-.4px;}
+  .carte .unite{font-size:12.5px;font-weight:400;color:var(--doux);}
+  .carte .note{font-size:11.5px;color:var(--doux);margin-top:5px;}
+  .carte.vert .valeur{color:var(--vert);} .carte.rouge .valeur{color:var(--rouge);}
+  .carte.accent{border-left:3px solid var(--bleu);}
+  .carte.vert.accent{border-left-color:var(--vert);}
+  .carte.rouge.accent{border-left-color:var(--rouge);}
+  .carte.lien{display:block;text-decoration:none;color:inherit;cursor:pointer;}
+  .carte.lien:hover{box-shadow:var(--ombre-forte);border-color:var(--bleu);}
+  .carte.lien h4{color:var(--bleu);}
+
+  .panneau{background:#fff;border:1px solid var(--bord);
+    border-radius:var(--rayon);padding:20px;margin-bottom:22px;
+    box-shadow:var(--ombre);}
+  .panneau.plat{box-shadow:none;}
+  .panneau > h3:first-child{margin-top:0;}
+
+  /* ---------- Tableaux ---------- */
+  table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;
+    border:1px solid var(--bord);border-radius:var(--rayon);overflow:hidden;}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--bord);
+    font-size:13.5px;}
+  th{background:var(--bleu-pale);font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;color:var(--bleu);font-weight:700;white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--bleu-brume);}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  td.centre,th.centre{text-align:center;}
+  tr.total td{font-weight:700;background:var(--bleu-pale);color:var(--bleu);}
+  .table-scroll{overflow-x:auto;border-radius:var(--rayon);}
+  .positif{color:var(--vert);} .negatif{color:var(--rouge);}
+  .discret{color:var(--doux);font-size:12.5px;}
+
+  /* ---------- Boutons ---------- */
+  .btn{display:inline-block;background:var(--bleu);color:#fff;padding:9px 16px;
+    border-radius:var(--rayon-petit);font-size:13.5px;border:1px solid var(--bleu);
+    cursor:pointer;font-family:inherit;font-weight:600;line-height:1.3;
+    transition:background .13s,border-color .13s;text-align:center;}
+  .btn:hover{background:var(--bleu-clair);border-color:var(--bleu-clair);
+    text-decoration:none;color:#fff;}
+  .btn.vert{background:var(--vert);border-color:var(--vert);}
+  .btn.vert:hover{background:#1a6540;border-color:#1a6540;}
+  .btn.rouge{background:var(--rouge);border-color:var(--rouge);}
+  .btn.rouge:hover{background:#96291f;border-color:#96291f;}
+  .btn.clair{background:#fff;color:var(--bleu);border-color:var(--bord-fort);}
+  .btn.clair:hover{background:var(--bleu-brume);color:var(--bleu);
+    border-color:var(--bleu-clair);}
+  .btn.petit{padding:5px 11px;font-size:12.5px;}
+  .btn:disabled,.btn.inactif{opacity:.5;cursor:not-allowed;}
+  form.inline{display:inline;}
+  .actions{display:flex;gap:9px;flex-wrap:wrap;}
+
+  /* ---------- Formulaires ---------- */
+  .champ{margin-bottom:15px;}
+  .champ label{display:block;font-size:12.5px;color:var(--doux);
+    margin-bottom:5px;font-weight:600;}
+  .champ input,.champ select,.champ textarea{
+    width:100%;padding:9px 11px;border:1px solid var(--bord-fort);
+    border-radius:var(--rayon-petit);font-size:14px;font-family:inherit;
+    background:#fff;color:var(--texte);transition:border-color .13s,box-shadow .13s;}
+  .champ input:focus,.champ select:focus,.champ textarea:focus{
+    outline:none;border-color:var(--bleu-clair);
+    box-shadow:0 0 0 3px rgba(43,96,152,.13);}
+  .champ input[type=file]{padding:7px 9px;background:var(--bleu-brume);}
+  .champ .aide{font-size:12px;color:var(--doux);margin-top:4px;line-height:1.45;}
+  .champ.case{display:flex;align-items:flex-start;gap:9px;}
+  .champ.case input{width:auto;margin-top:2px;}
+  .champ.case label{margin:0;font-weight:500;color:var(--texte);font-size:13.5px;}
+  .grille2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;}
+  .grille3{display:grid;grid-template-columns:repeat(3,1fr);gap:0 18px;}
+  @media(max-width:760px){.grille2,.grille3{grid-template-columns:1fr;}}
+  fieldset{border:none;margin-bottom:8px;}
+  legend{font-size:12px;text-transform:uppercase;letter-spacing:.6px;
+    font-weight:700;color:var(--bleu);padding-bottom:10px;}
+
+  .filtres{display:flex;gap:11px;flex-wrap:wrap;align-items:flex-end;
+    margin-bottom:18px;background:#fff;border:1px solid var(--bord);
+    border-radius:var(--rayon);padding:14px 16px;box-shadow:var(--ombre);}
+  .filtres .champ{margin-bottom:0;min-width:150px;}
+
+  /* ---------- Messages ---------- */
+  .flash{padding:12px 16px;border-radius:var(--rayon-petit);margin-bottom:16px;
+    font-size:14px;border-left:4px solid;line-height:1.5;}
+  .flash.succes{background:var(--vert-pale);color:#155235;border-color:var(--vert);}
+  .flash.erreur{background:var(--rouge-pale);color:#7f2118;border-color:var(--rouge);}
+  .flash.info{background:var(--bleu-pale);color:var(--bleu);border-color:var(--bleu-clair);}
+
+  .etiquette{display:inline-block;padding:2px 9px;border-radius:11px;
+    font-size:11px;font-weight:700;background:var(--bleu-pale);color:var(--bleu);
+    letter-spacing:.2px;white-space:nowrap;}
+  .etiquette.vert{background:var(--vert-pale);color:#155235;}
+  .etiquette.rouge{background:var(--rouge-pale);color:#7f2118;}
+  .etiquette.or{background:var(--or-pale);color:#7d5810;}
+  .etiquette.gris{background:var(--gris);color:var(--doux);}
+
+  .vide{text-align:center;padding:36px 20px;color:var(--doux);font-size:14px;}
+  .zone-vide{text-align:center;padding:48px 24px;color:var(--doux);
+    background:#fff;border:1px dashed var(--bord-fort);border-radius:var(--rayon);}
+
+  .encart{background:var(--or-pale);border-left:4px solid var(--or);
+    padding:13px 17px;border-radius:var(--rayon-petit);margin-bottom:18px;
+    font-size:13.5px;line-height:1.55;}
+  .encart.bleu{background:var(--bleu-pale);border-left-color:var(--bleu-clair);}
+  .encart strong{display:block;margin-bottom:3px;}
+
+  /* ---------- Graphiques ---------- */
+  .grille-graphiques{display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+    gap:16px;margin-bottom:26px;}
+  .graphique{margin-bottom:0;padding:16px 18px;}
+  .graphique.large{grid-column:1 / -1;}
+  .titre-graphique{font-size:11.5px;color:var(--doux);text-transform:uppercase;
+    letter-spacing:.6px;font-weight:700;margin:0 0 12px;}
+  .zone-canvas{position:relative;height:262px;}
+  .graphique.large .zone-canvas{height:305px;}
+  @media(max-width:720px){.zone-canvas,.graphique.large .zone-canvas{height:238px;}}
+  .graphique-vide{display:flex;align-items:center;justify-content:center;
+    height:100%;color:var(--tres-doux);font-size:13px;text-align:center;
+    padding:20px;background:var(--bleu-brume);border-radius:var(--rayon-petit);}
+
+  /* ---------- Comptes détaillés : Prévu / Réalisé / Écart ---------- */
+  .compte{border-collapse:separate;border-spacing:0;font-size:12.5px;
+    min-width:max-content;}
+  .compte th,.compte td{padding:6px 9px;white-space:nowrap;
+    border-bottom:1px solid var(--bord);}
+  .compte thead th{position:sticky;top:0;z-index:3;background:var(--bleu);
+    color:#fff;font-size:10.5px;text-align:center;border-bottom:none;}
+  .compte thead tr.mois th{border-left:1px solid rgba(255,255,255,.25);}
+  .compte thead tr.colonnes th{background:var(--bleu-clair);font-size:9.5px;
+    letter-spacing:.4px;}
+  .compte th.libelle,.compte td.libelle{
+    position:sticky;left:0;z-index:2;background:#fff;text-align:left;
+    white-space:normal;min-width:280px;max-width:340px;
+    border-right:2px solid var(--bord-fort);}
+  .compte thead th.libelle{z-index:4;background:var(--bleu);color:#fff;}
+  .compte td{text-align:right;font-variant-numeric:tabular-nums;}
+  .compte tbody tr:hover td{background:var(--bleu-brume);}
+  .compte tbody tr:hover td.libelle{background:var(--bleu-brume);}
+  .compte tr.section td{background:var(--bleu);color:#fff;font-weight:700;
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;
+    text-align:left;padding:8px 10px;}
+  .compte tr.section td.libelle{background:var(--bleu);color:#fff;}
+  .compte tr.total-section td{background:var(--bleu-pale);font-weight:700;
+    color:var(--bleu);}
+  .compte tr.total-section td.libelle{background:var(--bleu-pale);}
+  .compte tr.calcul td{background:#e3ebf4;font-weight:700;color:var(--bleu-fonce);}
+  .compte tr.calcul td.libelle{background:#e3ebf4;}
+  .compte tr.solde td{background:var(--or-pale);font-weight:600;}
+  .compte tr.solde td.libelle{background:var(--or-pale);}
+  .compte td.ecart{border-right:1px solid var(--bord-fort);}
+  .compte td.total-annee{background:#f0f4f9;font-weight:700;}
+  .compte tr:hover td.total-annee{background:#e6edf5;}
+  .compte .zero{color:var(--tres-doux);}
+
+  .legende-compte{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;
+    color:var(--doux);margin-bottom:14px;}
+  .legende-compte b{color:var(--texte);}
+
+  /* ---------- Saisie du budget ---------- */
+  .budget{border-collapse:separate;border-spacing:0;font-size:12.5px;
+    min-width:max-content;}
+  .budget th,.budget td{padding:4px 6px;border-bottom:1px solid var(--bord);}
+  .budget thead th{position:sticky;top:0;z-index:3;background:var(--bleu);
+    color:#fff;font-size:10.5px;text-align:center;padding:8px 6px;}
+  .budget th.libelle,.budget td.libelle{position:sticky;left:0;z-index:2;
+    background:#fff;text-align:left;white-space:normal;min-width:270px;
+    max-width:330px;border-right:2px solid var(--bord-fort);padding:6px 10px;}
+  .budget thead th.libelle{z-index:4;background:var(--bleu);}
+  .budget input{width:92px;padding:5px 7px;border:1px solid var(--bord);
+    border-radius:5px;font-size:12.5px;font-family:inherit;text-align:right;
+    font-variant-numeric:tabular-nums;background:#fff;}
+  .budget input:focus{outline:none;border-color:var(--bleu-clair);
+    box-shadow:0 0 0 2px rgba(43,96,152,.15);background:#fff;}
+  .budget input:not(:placeholder-shown){background:var(--vert-pale);
+    border-color:#bcdcc9;font-weight:600;}
+  .budget tr.section td{background:var(--bleu);color:#fff;font-weight:700;
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;padding:8px 10px;}
+  .budget tr.section td.libelle{background:var(--bleu);color:#fff;}
+  .budget tr:hover td.libelle{background:var(--bleu-brume);}
+  .budget td.total{text-align:right;font-weight:700;color:var(--bleu);
+    font-variant-numeric:tabular-nums;background:#f0f4f9;padding:6px 10px;}
+
+  /* ---------- Gestion commerciale ---------- */
+  .grille-fiche{display:grid;grid-template-columns:1fr 2fr;gap:20px;
+    align-items:start;}
+  @media(max-width:940px){.grille-fiche{grid-template-columns:1fr;}}
+  .lignes-doc{width:100%;border-collapse:collapse;}
+  .lignes-doc th{background:var(--bleu-pale);font-size:10.5px;padding:8px;
+    color:var(--bleu);}
+  .lignes-doc td{padding:5px 6px;border-bottom:1px solid var(--bord);}
+  .lignes-doc input,.lignes-doc select{width:100%;padding:7px 8px;
+    border:1px solid var(--bord);border-radius:5px;font-size:13px;
+    font-family:inherit;}
+  .lignes-doc input[type=checkbox]{width:auto;}
+  .totaux{margin-left:auto;max-width:350px;}
+  .totaux div{display:flex;justify-content:space-between;padding:7px 0;
+    font-size:14px;border-bottom:1px solid var(--bord);}
+  .totaux div.grand{font-size:17px;font-weight:700;color:var(--bleu);
+    border-bottom:2px solid var(--bleu);}
+  .alerte-stock{background:var(--or-pale);border-left:4px solid var(--or);
+    padding:12px 16px;border-radius:var(--rayon-petit);margin-bottom:16px;}
+  .apercu-doc{background:#fff;border:1px solid var(--bord);
+    border-radius:var(--rayon);padding:28px 32px;box-shadow:var(--ombre);}
+  .apercu-doc .entete{display:flex;justify-content:space-between;
+    align-items:flex-start;border-bottom:2px solid var(--texte);
+    padding-bottom:14px;margin-bottom:18px;}
+  .apercu-doc .entete img{max-height:64px;max-width:210px;}
+
+  /* ---------- Aperçu des images chargées ---------- */
+  .apercu-image{display:flex;align-items:center;gap:14px;padding:11px 13px;
+    background:var(--bleu-brume);border:1px solid var(--bord);
+    border-radius:var(--rayon-petit);margin-bottom:9px;}
+  .apercu-image img{max-height:56px;max-width:170px;background:#fff;
+    border:1px solid var(--bord);border-radius:5px;padding:4px;}
+  .apercu-image .sans{color:var(--tres-doux);font-size:13px;font-style:italic;}
+
+  /* ---------- Listes numérotées ---------- */
+  .etapes{counter-reset:etape;list-style:none;padding:0;}
+  .etapes li{counter-increment:etape;position:relative;padding:0 0 18px 42px;
+    font-size:14px;line-height:1.6;}
+  .etapes li::before{content:counter(etape);position:absolute;left:0;top:0;
+    width:27px;height:27px;border-radius:50%;background:var(--bleu);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+    font-weight:700;}
+  .etapes li strong{display:block;margin-bottom:2px;}
+  code{background:var(--bleu-pale);padding:2px 6px;border-radius:4px;
+    font-size:12.5px;font-family:Consolas,Monaco,monospace;color:var(--bleu);}
+
+  @media(max-width:640px){
+    main{padding:16px;}
+    header{padding:10px 16px;}
+    nav.onglets{padding:0 8px;}
+    .barre-entreprise{padding:9px 16px;}
+    h1{font-size:20px;}
+  }
+  @media print{
+    header,nav.onglets,.barre-entreprise,.filtres,.actions,.btn{display:none !important;}
+    main{padding:0;max-width:none;}
+    .panneau,table{box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="marque">
+    {% if cabinet and cabinet.logo %}
+      <img src="{{ url_for('image_hebergee', chemin=cabinet.logo.split('/')[-1]) }}"
+           alt="{{ cabinet.raison_sociale }}">
+    {% else %}
+      <img src="{{ url_for('static', filename='img/logo_ak_world.png') }}"
+           alt="{{ cabinet.raison_sociale if cabinet else NOM_CABINET }}">
+    {% endif %}
+    <span class="nom">
+      {{ cabinet.raison_sociale if cabinet else NOM_CABINET }}
+      <small>{{ cabinet.slogan if cabinet and cabinet.slogan else 'Gestion & suivi comptable' }}</small>
+    </span>
+  </div>
+  {% if current_user.is_authenticated %}
+  <div class="compte">
+    <span class="qui">
+      <b>{{ current_user.nom }}</b>
+      <span>{{ current_user.libelle_role() }}</span>
+    </span>
+    <a href="{{ url_for('profil') }}">Mon profil</a>
+    <a href="{{ url_for('deconnexion') }}">Déconnexion</a>
+  </div>
+  {% endif %}
+</header>
+
+{% if current_user.is_authenticated %}
+
+{# Sélecteur d'entreprise : le cabinet choisit ici l'entreprise sur laquelle
+   il travaille, et le choix est conservé d'un écran à l'autre. #}
+{% if not current_user.est_client and entreprises_menu %}
+<div class="barre-entreprise">
+  <form method="get" id="form-entreprise">
+    <label for="sel-entreprise">Entreprise</label>
+    <select name="entreprise_id" id="sel-entreprise" onchange="this.form.submit()">
+      <option value="">— Périmètre {{ NOM_CABINET }} —</option>
+      {% for e in entreprises_menu %}
+        <option value="{{ e.id }}" {{ 'selected' if e.id == entreprise_active }}>{{ e.nom }}</option>
+      {% endfor %}
+    </select>
+    {% if request.args.get('annee') %}<input type="hidden" name="annee" value="{{ request.args.get('annee') }}">{% endif %}
+  </form>
+  {% if current_user.peut_parametrer %}
+    <a href="{{ url_for('nouvelle_entreprise') }}" class="lien-discret">+ Nouvelle entreprise</a>
+    {% if entreprise_active %}
+      <a href="{{ url_for('modifier_entreprise', entreprise_id=entreprise_active) }}"
+         class="lien-discret">Paramètres de l'entreprise</a>
+    {% endif %}
+  {% endif %}
+</div>
+{% endif %}
+
+<nav class="onglets">
+  {% set ea = {'entreprise_id': entreprise_active} if entreprise_active else {} %}
+
+  {% if current_user.est_standard %}
+    {# Utilisateur standard : saisie et stock, tableau de bord simplifié #}
+    <a href="{{ url_for('espace_client') }}" class="{{ 'actif' if request.endpoint=='espace_client' }}">Mon activité</a>
+    <a href="{{ url_for('journal') }}" class="{{ 'actif' if request.endpoint=='journal' }}">Mes saisies</a>
+    <a href="{{ url_for('ventes') }}" class="{{ 'actif' if request.endpoint in ['ventes','nouveau_document','voir_document'] }}">Ventes</a>
+    <a href="{{ url_for('catalogue') }}" class="{{ 'actif' if request.endpoint in ['catalogue','nouvel_article','modifier_article'] }}">Produits &amp; services</a>
+    <a href="{{ url_for('stock') }}" class="{{ 'actif' if request.endpoint=='stock' }}">Stock</a>
+    <a href="{{ url_for('clients') }}" class="{{ 'actif' if request.endpoint in ['clients','fiche_client'] }}">Clients</a>
+    <a href="{{ url_for('fournisseurs') }}" class="{{ 'actif' if request.endpoint in ['fournisseurs','fiche_fournisseur'] }}">Fournisseurs</a>
+
+  {% else %}
+    <a href="{{ url_for('dashboard', **ea) }}" class="{{ 'actif' if request.endpoint in ['dashboard','compte_exploitation','compte_tresorerie','budget_accueil','budget'] }}">Tableau de bord</a>
+
+    <span class="separateur"></span>
+
+    <a href="{{ url_for('journal', **ea) }}" class="{{ 'actif' if request.endpoint=='journal' }}">Journal de bord</a>
+    <a href="{{ url_for('catalogue', **ea) }}" class="{{ 'actif' if request.endpoint in ['catalogue','nouvel_article','modifier_article'] }}">Produits &amp; services</a>
+    <a href="{{ url_for('familles', **ea) }}" class="{{ 'actif' if request.endpoint=='familles' }}">Familles</a>
+    <a href="{{ url_for('stock', **ea) }}" class="{{ 'actif' if request.endpoint=='stock' }}">Stock</a>
+    <a href="{{ url_for('clients', **ea) }}" class="{{ 'actif' if request.endpoint in ['clients','fiche_client'] }}">Clients</a>
+    <a href="{{ url_for('fournisseurs', **ea) }}" class="{{ 'actif' if request.endpoint in ['fournisseurs','fiche_fournisseur'] }}">Fournisseurs</a>
+
+    <span class="separateur"></span>
+
+    <a href="{{ url_for('rapports_cabinet', **ea) }}" class="{{ 'actif' if request.endpoint in ['rapports_cabinet','modifier_rapport'] }}">Rapports</a>
+    {% if current_user.peut_analyser %}
+      <a href="{{ url_for('rapports', **ea) }}" class="{{ 'actif' if request.endpoint=='rapports' }}">Exports</a>
+    {% endif %}
+    {% if current_user.est_cabinet or current_user.est_gerant %}
+      <a href="{{ url_for('utilisateurs') }}" class="{{ 'actif' if request.endpoint=='utilisateurs' }}">Utilisateurs</a>
+    {% endif %}
+    {% if current_user.peut_parametrer %}
+      <a href="{{ url_for('entreprises') }}" class="{{ 'actif' if request.endpoint in ['entreprises','nouvelle_entreprise','modifier_entreprise'] }}">Entreprises</a>
+      <a href="{{ url_for('parametres') }}" class="{{ 'actif' if request.endpoint=='parametres' }}">Paramètres</a>
+      <a href="{{ url_for('historique') }}" class="{{ 'actif' if request.endpoint=='historique' }}">Historique</a>
+    {% endif %}
+  {% endif %}
+</nav>
+{% endif %}
+
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for categorie, message in messages %}
+      <div class="flash {{ categorie }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block contenu %}{% endblock %}
+</main>
+</body>
+</html>

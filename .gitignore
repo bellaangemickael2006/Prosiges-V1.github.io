@@ -1,0 +1,46 @@
+# =====================================================================
+#  Fichiers à NE JAMAIS publier sur GitHub
+#  Contrôlez avec :  python verifier_avant_github.py
+# =====================================================================
+
+# ---- SECRETS — critique ----
+.env
+.env.local
+credentials.json
+*.json.key
+token.json
+client_secret*.json
+
+# ---- Base de données ----
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# ---- Environnements Python ----
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.installe
+
+# ---- Fichiers téléversés par les utilisateurs ----
+uploads/
+
+# ---- Marqueurs internes ----
+.demo_chargee
+
+# ---- Éditeurs et systèmes ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Divers ----
+*.log
+tmp_*

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block titre %}{{ rapport.titre }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>{{ 'Rédiger le rapport' if peut_rediger else 'Rapport' }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ entreprise.nom }} — {{ rapport.periode or '' }}
+      {% if rapport.publie %}<span class="etiquette vert">Publié le {{ rapport.date_publication.strftime('%d/%m/%Y') }}</span>
+      {% else %}<span class="etiquette or">Brouillon</span>{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a class="btn clair" href="{{ url_for('telecharger_rapport', rapport_id=rapport.id) }}">Télécharger le PDF</a>
+    <a class="btn clair" href="{{ url_for('rapports_cabinet', **scope_args) }}">Retour</a>
+  </div>
+</div>
+
+{% if peut_rediger %}
+<div class="encart bleu">
+  <strong>Structure du rapport</strong>
+  Les 4 premières pages (couverture avec logo FDFP, sommaire, présentation du
+  cabinet, habilitations FDFP) et le bandeau AK en tête/pied sont générés
+  automatiquement — modifiez-les dans <a href="{{ url_for('parametres') }}">Paramètres</a>.
+  Ci-dessous, le corps du rapport : renommez les titres, réécrivez, ajoutez ou
+  supprimez des sections librement.
+</div>
+
+<form method="post">
+  <div class="panneau">
+    <div class="grille2">
+      <div class="champ">
+        <label>Titre *</label>
+        <input type="text" name="titre" required value="{{ rapport.titre }}">
+      </div>
+      <div class="champ">
+        <label>Période</label>
+        <input type="text" name="periode" value="{{ rapport.periode or '' }}">
+      </div>
+    </div>
+  </div>
+
+  {% for section in rapport.sections %}
+  <div class="panneau"{% if loop.last %} id="derniere-section"{% endif %}>
+    <div class="champ" style="margin-bottom:8px;">
+      <label>Titre de la section</label>
+      <input type="text" name="section_titre" value="{{ section.titre }}"
+             style="font-weight:600;">
+      <input type="hidden" name="section_id" value="{{ section.id }}">
+    </div>
+    <textarea name="section_corps" rows="6"
+      style="width:100%;padding:11px;border:1px solid var(--bord);border-radius:7px;font-family:inherit;font-size:14px;line-height:1.6;">{{ section.corps or '' }}</textarea>
+    <div class="champ case" style="margin-top:9px;">
+      <input type="checkbox" id="suppr_{{ section.id }}" name="supprimer" value="{{ section.id }}">
+      <label for="suppr_{{ section.id }}" style="color:var(--rouge);">Supprimer cette section</label>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="panneau plat" style="text-align:center;border-style:dashed;">
+    <button class="btn clair" type="submit" name="ajouter_section" value="1">
+      + Ajouter une section
+    </button>
+    <p style="font-size:12.5px;color:var(--doux);margin-top:8px;">
+      Enregistre les saisies en cours et ajoute une section vierge en bas.
+    </p>
+  </div>
+
+  <div class="panneau" style="background:#eaf1f7;border-left:4px solid var(--bleu);">
+    <strong>Publier le rapport</strong>
+    <p style="margin:6px 0 14px;font-size:14px;line-height:1.55;">
+      Tant qu'il reste en brouillon, seul le cabinet le voit. Une fois publié,
+      le client y accède dès sa prochaine connexion. Cochez « Supprimer » sur
+      une section avant d'enregistrer pour la retirer.
+    </p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn" type="submit">Enregistrer le brouillon</button>
+      <button class="btn vert" type="submit" name="publier" value="1">
+        {{ 'Republier' if rapport.publie else 'Enregistrer et publier' }}
+      </button>
+    </div>
+  </div>
+</form>
+
+{% else %}
+<div class="panneau">
+  <h2 style="margin-top:0;">{{ rapport.titre }}</h2>
+  <p class="sous-titre">{{ rapport.periode }} — rédigé par {{ rapport.cree_par.nom if rapport.cree_par else NOM_CABINET }}</p>
+
+  {% for section in rapport.sections %}
+    {% if section.corps and section.corps.strip() %}
+    <h3>{{ section.titre }}</h3>
+    {% for paragraphe in section.corps.split('\n') %}
+      {% if paragraphe.strip() %}<p style="font-size:14.5px;line-height:1.7;margin-bottom:8px;">{{ paragraphe }}</p>{% endif %}
+    {% endfor %}
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

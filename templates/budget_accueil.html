@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block titre %}Budgets — {{ entreprise.nom }}{% endblock %}
+{% block contenu %}
+
+<div class="barre">
+  <div>
+    <h1>Budgets {{ annee }}</h1>
+    <p class="sous-titre" style="margin:0;">
+      {{ entreprise.nom }} — ce que vous prévoyez, mois par mois
+    </p>
+  </div>
+  <form method="get">
+    <input type="hidden" name="entreprise_id" value="{{ entreprise.id }}">
+    <select name="annee" onchange="this.form.submit()"
+            style="padding:8px 11px;border:1px solid var(--bord-fort);border-radius:7px;font-family:inherit;">
+      {% for a in range(annee_courante + 1, annee_courante - 5, -1) %}
+        <option value="{{ a }}" {{ 'selected' if a == annee }}>Exercice {{ a }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="encart bleu">
+  <strong>À quoi sert le budget</strong>
+  Vous indiquez ici ce que vous <b>prévoyez</b> pour chaque mois : le chiffre
+  d'affaires que vous comptez réaliser, le loyer que vous savez devoir payer,
+  les charges attendues. L'application confronte ensuite ce prévisionnel à ce
+  qui s'est réellement passé et calcule l'écart toute seule — c'est ce qui
+  vous permet de savoir, en cours d'année, si vous êtes en avance ou en
+  retard sur vos objectifs.
+</div>
+
+<div class="cartes" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));">
+  {% for type_budget in TYPES_BUDGET %}
+    {% set etat = synthese[type_budget] %}
+    <div class="panneau" style="margin-bottom:0;">
+      <h3 style="margin-top:0;">{{ LABELS_BUDGET[type_budget] }}</h3>
+      <p style="font-size:13.5px;color:var(--doux);line-height:1.6;min-height:56px;">
+        {% if type_budget == 'exploitation' %}
+          Chiffre d'affaires prévu par famille de produits, charges variables
+          et charges fixes prévues.
+        {% else %}
+          Encaissements et décaissements prévus — la liquidité réelle
+          attendue, mois par mois.
+        {% endif %}
+      </p>
+      <p style="margin-bottom:16px;">
+        {% if etat.renseigne %}
+          <span class="etiquette vert">Renseigné</span>
+          <span class="discret" style="margin-left:8px;">
+            Total prévu sur l'année : {{ etat.total|montant }} {{ DEVISE }}
+          </span>
+        {% else %}
+          <span class="etiquette or">À renseigner</span>
+        {% endif %}
+      </p>
+      <div class="actions">
+        <a class="btn" href="{{ url_for('budget', type_budget=type_budget, entreprise_id=entreprise.id, annee=annee) }}">
+          {{ 'Modifier le budget' if etat.renseigne else 'Saisir le budget' }}
+        </a>
+        <a class="btn clair"
+           href="{{ url_for('compte_exploitation' if type_budget == 'exploitation' else 'compte_tresorerie', entreprise_id=entreprise.id, annee=annee) }}">
+          Voir le compte
+        </a>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+{% endblock %}
