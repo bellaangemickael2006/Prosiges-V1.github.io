@@ -69,3 +69,9 @@ class Config:
     # ---- Application ----
     DEVISE = 'FCFA'
     NOM_CABINET = os.environ.get('NOM_CABINET', 'AK World')
+
+    # ---- Suivi des erreurs (Sentry, facultatif) ----
+    # Laisser vide pour désactiver. Créez un projet gratuit sur sentry.io
+    # et collez son DSN ici pour recevoir une alerte à chaque erreur serveur.
+    SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+    ENVIRONNEMENT = os.environ.get('ENVIRONNEMENT', 'developpement')

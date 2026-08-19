@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo_ak_world.png') }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#173a5e">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AK World">
 <title>{% block titre %}{{ NOM_CABINET }}{% endblock %}</title>
 <style>
   /* ==================================================================
@@ -459,5 +465,12 @@
   {% endwith %}
   {% block contenu %}{% endblock %}
 </main>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register("{{ url_for('service_worker') }}");
+    });
+  }
+</script>
 </body>
 </html>

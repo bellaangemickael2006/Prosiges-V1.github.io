@@ -1,0 +1,73 @@
+# =====================================================================
+#  Environnement de STAGING — akworld-staging.onrender.com
+#
+#  Copie indépendante du service de production (base de données séparée,
+#  URL séparée), branchée sur la branche Git "staging" au lieu de "main".
+#  Sert à vérifier un changement en conditions réelles avant de le
+#  fusionner dans "main" (qui, lui, se déploie automatiquement sur le
+#  site de production via render.yaml).
+#
+#  Mise en place (une seule fois) :
+#    1. Créez la branche :   git checkout -b staging && git push -u origin staging
+#    2. Sur render.com : New → Blueprint → sélectionnez ce dépôt
+#    3. Quand Render demande le fichier Blueprint, indiquez :
+#         render-staging.yaml
+#    4. Cliquez sur « Apply »
+#
+#  Usage ensuite, avant chaque changement risqué :
+#    git checkout staging && git merge main && git push
+#    → vérifiez sur https://akworld-staging.onrender.com
+#    → si tout va bien : git checkout main && git merge staging && git push
+#      (déclenche le déploiement automatique en production)
+# =====================================================================
+
+services:
+  - type: web
+    name: akworld-staging
+    runtime: python
+    plan: free
+    branch: staging
+    buildCommand: pip install -r requirements-production.txt
+    startCommand: gunicorn "app:app" --workers 2 --timeout 120
+    healthCheckPath: /connexion
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: COOKIE_SECURE
+        value: "true"
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: akworld-staging-db
+          property: connectionString
+
+      - key: NOM_CABINET
+        value: AK World (staging)
+
+      - key: AUTO_INIT
+        value: "true"
+
+      - key: ENVIRONNEMENT
+        value: staging
+
+      # Facultatif : même projet Sentry que la production, ou un projet
+      # séparé — les deux sont distingués grâce à ENVIRONNEMENT ci-dessus.
+      - key: SENTRY_DSN
+        sync: false
+
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+
+databases:
+  - name: akworld-staging-db
+    plan: free
+    databaseName: akworld_staging
+    user: akworld_staging

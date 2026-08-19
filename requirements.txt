@@ -25,3 +25,6 @@ reportlab>=4.2.5,<6.0
 
 # --- Graphiques des rapports PDF (annexe « Analyse graphique ») ---
 matplotlib>=3.8,<4.0
+
+# --- Suivi des erreurs en production (Sentry, facultatif) ---
+sentry-sdk[flask]>=2.0,<3.0

@@ -46,6 +46,15 @@ services:
       - key: AUTO_INIT
         value: "true"
 
+      - key: ENVIRONNEMENT
+        value: production
+
+      # Suivi des erreurs (facultatif) : collez votre DSN Sentry depuis
+      # le tableau de bord Render, onglet Environment, une fois un projet
+      # créé sur sentry.io. Laissez vide pour ne rien activer.
+      - key: SENTRY_DSN
+        sync: false
+
       # ---- Google Drive / Sheets (facultatif) --------------------
       # À renseigner plus tard depuis le tableau de bord Render,
       # onglet Environment. Voir README.md section 5.

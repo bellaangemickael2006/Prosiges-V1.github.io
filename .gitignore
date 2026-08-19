@@ -41,6 +41,9 @@ uploads/
 Thumbs.db
 desktop.ini
 
+# ---- Outils tiers téléchargés localement ----
+snyk.exe
+
 # ---- Divers ----
 *.log
 tmp_*

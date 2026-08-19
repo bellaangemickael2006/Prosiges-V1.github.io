@@ -38,6 +38,17 @@ def creer_app(config=Config):
     app.config.from_object(config)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    if app.config.get('SENTRY_DSN'):
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=app.config['SENTRY_DSN'],
+            environment=app.config.get('ENVIRONNEMENT'),
+            integrations=[FlaskIntegration()],
+            traces_sample_rate=0.1,
+            send_default_pii=False,
+        )
+
     db.init_app(app)
 
     gestionnaire = LoginManager()
@@ -317,6 +328,14 @@ def creer_app(config=Config):
     # ======================================================================
     # ACCUEIL / TABLEAU DE BORD
     # ======================================================================
+
+    @app.route('/sw.js')
+    def service_worker():
+        # Servi depuis la racine (et non /static/) pour que sa portée
+        # couvre tout le site, pas seulement les fichiers statiques.
+        reponse = send_file(os.path.join(app.static_folder, 'sw.js'))
+        reponse.headers['Cache-Control'] = 'no-cache'
+        return reponse
 
     @app.route('/')
     @login_required

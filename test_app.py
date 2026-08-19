@@ -232,6 +232,45 @@ def executer():
                               data={'email': 'cabinet@akworld.com', 'password': 'mauvais'})
         verifier("mauvais mot de passe refusé", b'incorrect' in reponse.data)
 
+    # ================== VERROUILLAGE ANTI FORCE BRUTE ==================
+    print("\n-- Verrouillage anti force brute --")
+    with app.app_context():
+        cible = User(nom='Test Sécurité', email='test.securite@akworld.com',
+                     role=Role.STANDARD, entreprise_id=id_e1)
+        cible.set_password('MotDePasseValide1!')
+        db.session.add(cible)
+        db.session.commit()
+        id_cible = cible.id
+
+    with app.test_client() as client:
+        for _ in range(User.SEUIL_VERROUILLAGE):
+            client.post('/connexion', data={'email': 'test.securite@akworld.com',
+                                            'password': 'mauvais'})
+        reponse = client.post('/connexion',
+                              data={'email': 'test.securite@akworld.com',
+                                    'password': 'MotDePasseValide1!'})
+        verifier(f"compte verrouillé après {User.SEUIL_VERROUILLAGE} échecs "
+                 "(bon mot de passe refusé pendant le verrouillage)",
+                 b'tentatives' in reponse.data.lower())
+        verifier("toujours déconnecté malgré le bon mot de passe pendant le verrouillage",
+                 client.get('/dashboard').status_code == 302)
+
+    # ================== PROTECTION CSRF (vérification d'origine) ==================
+    print("\n-- Protection CSRF --")
+    with app.test_client() as client:
+        connecter(client, 'cabinet@akworld.com', 'AkWorld2026!')
+        reponse = client.post(f'/utilisateurs/{id_cible}/basculer',
+                              headers={'Origin': 'https://site-malveillant.exemple'})
+        verifier("requête POST avec une origine différente refusée (403)",
+                 reponse.status_code == 403)
+        reponse = client.post(f'/utilisateurs/{id_cible}/basculer', follow_redirects=True)
+        verifier("même requête sans origine forgée acceptée normalement",
+                 reponse.status_code == 200)
+
+    with app.app_context():
+        db.session.delete(db.session.get(User, id_cible))
+        db.session.commit()
+
     # ================== PLAN DE RUBRIQUES ==================
     print("\n-- Plan de rubriques --")
     with app.app_context():
